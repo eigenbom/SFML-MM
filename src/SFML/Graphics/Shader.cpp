@@ -645,6 +645,15 @@ void Shader::setUniformArray(const std::string& name, const float* scalarArray, 
 
 
 ////////////////////////////////////////////////////////////
+void Shader::setUniformArray(const std::string& name, const int* scalarArray, std::size_t length)
+{
+    UniformBinder binder(*this, name);
+    if (binder.location != -1)
+        glCheck(GLEXT_glUniform1iv(binder.location, length, scalarArray));
+}
+
+
+////////////////////////////////////////////////////////////
 void Shader::setUniformArray(const std::string& name, const Glsl::Vec2* vectorArray, std::size_t length)
 {
     std::vector<float> contiguous = flatten(vectorArray, length);
