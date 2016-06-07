@@ -144,6 +144,16 @@ void Sprite::draw(RenderTarget& target, RenderStates states) const
     }
 }
 
+////////////////////////////////////////////////////////////
+void Sprite::drawAdvanced(RenderTarget& target, RenderStates states) const
+{
+    if (m_texture)
+    {
+        states.transform *= getTransform();
+        states.texture = m_texture;
+        target.drawAdvanced(m_vertices, 4, TrianglesStrip, states);
+    }
+}
 
 ////////////////////////////////////////////////////////////
 void Sprite::updatePositions()

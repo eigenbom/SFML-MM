@@ -235,6 +235,8 @@ public:
     ////////////////////////////////////////////////////////////
     void draw(const Drawable& drawable, const RenderStates& states = RenderStates::Default);
 
+    void drawAdvanced(const Drawable& drawable, const RenderStates& states = RenderStates::Default);
+
     ////////////////////////////////////////////////////////////
     /// \brief Draw primitives defined by an array of vertices
     ///
@@ -246,6 +248,9 @@ public:
     ////////////////////////////////////////////////////////////
     void draw(const Vertex* vertices, std::size_t vertexCount,
               PrimitiveType type, const RenderStates& states = RenderStates::Default);
+
+    void drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
+        PrimitiveType type, const RenderStates& states = RenderStates::Default);
 
     ////////////////////////////////////////////////////////////
     /// \brief Return the size of the rendering region of the target
@@ -323,6 +328,20 @@ public:
     ////////////////////////////////////////////////////////////
     void resetGLStates();
 
+    ////////////////////////////////////////////////////////////
+    /// \brief Activate the target for rendering
+    ///
+    /// This function must be implemented by derived classes to make
+    /// their OpenGL context current; it is called by the base class
+    /// everytime it's going to use OpenGL calls.
+    ///
+    /// \param active True to make the target active, false to deactivate it
+    ///
+    /// \return True if the function succeeded
+    ///
+    ////////////////////////////////////////////////////////////
+    virtual bool activate(bool active) = 0;
+
 protected:
 
     ////////////////////////////////////////////////////////////
@@ -379,20 +398,6 @@ private:
     ///
     ////////////////////////////////////////////////////////////
     void applyShader(const Shader* shader);
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Activate the target for rendering
-    ///
-    /// This function must be implemented by derived classes to make
-    /// their OpenGL context current; it is called by the base class
-    /// everytime it's going to use OpenGL calls.
-    ///
-    /// \param active True to make the target active, false to deactivate it
-    ///
-    /// \return True if the function succeeded
-    ///
-    ////////////////////////////////////////////////////////////
-    virtual bool activate(bool active) = 0;
 
     ////////////////////////////////////////////////////////////
     /// \brief Render states cache

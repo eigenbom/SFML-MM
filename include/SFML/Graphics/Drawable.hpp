@@ -67,6 +67,7 @@ protected:
     ///
     ////////////////////////////////////////////////////////////
     virtual void draw(RenderTarget& target, RenderStates states) const = 0;
+    virtual void drawAdvanced(RenderTarget& target, RenderStates states) const { };
 };
 
 } // namespace sf
