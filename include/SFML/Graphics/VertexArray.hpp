@@ -181,6 +181,7 @@ private:
     ///
     ////////////////////////////////////////////////////////////
     virtual void draw(RenderTarget& target, RenderStates states) const;
+    virtual void drawAdvanced(RenderTarget& target, RenderStates states) const;
 
 private:
 

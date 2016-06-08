@@ -147,4 +147,11 @@ void VertexArray::draw(RenderTarget& target, RenderStates states) const
         target.draw(&m_vertices[0], m_vertices.size(), m_primitiveType, states);
 }
 
+////////////////////////////////////////////////////////////
+void VertexArray::drawAdvanced(RenderTarget& target, RenderStates states) const
+{
+    if (!m_vertices.empty())
+        target.drawAdvanced(&m_vertices[0], m_vertices.size(), m_primitiveType, states);
+}
+
 } // namespace sf
