@@ -475,6 +475,10 @@ bool Shader::loadFromStream(InputStream& vertexShaderStream, InputStream& geomet
     return compile(&vertexShader[0], &geometryShader[0], &fragmentShader[0]);
 }
 
+void Shader::getUniform(const std::string& name, float* values)
+{
+    glGetUniformfvARB(m_shaderProgram, getUniformLocation(name), values);
+}
 
 ////////////////////////////////////////////////////////////
 void Shader::setUniform(const std::string& name, float x)
@@ -729,10 +733,26 @@ unsigned int Shader::getNativeHandle() const
     return m_shaderProgram;
 }
 
+#if defined(_DEBUG)
+static bool s_assertOnBind = false;
+void Shader::setAssertOnBind(bool enable)
+{
+    s_assertOnBind = enable;
+}
+#endif
 
 ////////////////////////////////////////////////////////////
 void Shader::bind(const Shader* shader)
 {
+#if defined(_DEBUG)
+    if (s_assertOnBind)
+#if defined(SFML_SYSTEM_WINDOWS)
+        DebugBreak();
+#else
+        __asm__ volatile("int $0x03");
+#endif
+#endif
+
     ensureGlContext();
 
     // Make sure that we can use shaders

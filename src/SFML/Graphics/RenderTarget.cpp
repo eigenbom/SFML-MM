@@ -288,6 +288,10 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
                                        GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_QUADS};
         GLenum mode = modes[type];
 
+#if defined(_DEBUG)
+        GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+#endif
+
         // Draw the primitives
         glCheck(glDrawArrays(mode, 0, vertexCount));
 
@@ -385,6 +389,11 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     static const GLenum modes[] = { GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
         GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_QUADS };
     GLenum mode = modes[type];
+
+#if defined(_DEBUG)
+    GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+    assert(currentShaderHandle != 0);
+#endif
 
     // Draw the primitives
     glCheck(glDrawArrays(mode, 0, vertexCount));
