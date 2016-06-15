@@ -717,7 +717,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec4* vectorAr
 ////////////////////////////////////////////////////////////
 void Shader::setUniformArray(int location, const Glsl::Vec4* vectorArray, std::size_t length)
 {
-    assert(sizeof(Glsl::Vec4) == 4 * 4);
+    static_assert(sizeof(Glsl::Vec4) == 4 * 4, "Vec4 is not 16 bytes");
     assert(location != -1);
     assert(vectorArray);
     glCheck(GLEXT_glUniform4fv(location, length, &vectorArray->x));
