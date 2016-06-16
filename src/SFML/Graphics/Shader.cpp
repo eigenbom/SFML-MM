@@ -254,6 +254,27 @@ struct Shader::UniformBinder : private NonCopyable
         }
     }
 
+    UniformBinder(Shader& shader, int l) :
+        savedProgram(0),
+        currentProgram(castToGlHandle(shader.m_shaderProgram)),
+        location(l)
+    {
+        restore = shader.m_alwaysBind;
+
+        if (currentProgram)
+        {
+            if (restore)
+            {
+                ensureGlContext();
+
+                // Enable program object
+                glCheck(savedProgram = GLEXT_glGetHandle(GLEXT_GL_PROGRAM_OBJECT));
+                if (currentProgram != savedProgram)
+                    glCheck(GLEXT_glUseProgramObject(currentProgram));
+            }
+        }
+    }
+
     ////////////////////////////////////////////////////////////
     /// \brief Destructor: restore state after uniform is set
     ///
@@ -497,6 +518,7 @@ void Shader::setUniform(const std::string& name, float x)
 ////////////////////////////////////////////////////////////
 void Shader::setUniform(int location, float x)
 {
+    UniformBinder binder(*this, location);
     if (location != -1)
         glCheck(GLEXT_glUniform1f(location, x));
 }
@@ -514,7 +536,9 @@ void Shader::setUniform(const std::string& name, const Glsl::Vec2& v)
 ////////////////////////////////////////////////////////////
 void Shader::setUniform(int location, const Glsl::Vec2& v)
 {
-    glCheck(GLEXT_glUniform2f(location, v.x, v.y));
+    UniformBinder binder(*this, location);
+    if (location != -1)
+        glCheck(GLEXT_glUniform2f(location, v.x, v.y));
 }
 
 
@@ -537,6 +561,7 @@ void Shader::setUniform(const std::string& name, const Glsl::Vec4& v)
 
 void Shader::setUniform(int location, const Glsl::Vec4& v)
 {
+    UniformBinder binder(*this, location);
     if (location != -1)
         glCheck(GLEXT_glUniform4f(location, v.x, v.y, v.z, v.w));
 }
@@ -552,6 +577,7 @@ void Shader::setUniform(const std::string& name, int x)
 ////////////////////////////////////////////////////////////
 void Shader::setUniform(int location, int x)
 {
+    UniformBinder binder(*this, location);
     if (location != -1)
         glCheck(GLEXT_glUniform1i(location, x));
 }
@@ -741,6 +767,7 @@ void Shader::setUniformArray(const std::string& name, const int* scalarArray, st
 ////////////////////////////////////////////////////////////
 void Shader::setUniformArray(int location, const int* scalarArray, std::size_t length)
 {
+    UniformBinder binder(*this, location);
     if (location != -1)
         glCheck(GLEXT_glUniform1iv(location, length, scalarArray));
 }
@@ -781,6 +808,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec4* vectorAr
 void Shader::setUniformArray(int location, const Glsl::Vec4* vectorArray, std::size_t length)
 {
     static_assert(sizeof(Glsl::Vec4) == 4 * 4, "Vec4 is not 16 bytes");
+    UniformBinder binder(*this, location);
     assert(vectorArray);
     if (location != -1)
         glCheck(GLEXT_glUniform4fv(location, length, &vectorArray->x));
