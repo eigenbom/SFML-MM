@@ -807,7 +807,12 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec4* vectorAr
 ////////////////////////////////////////////////////////////
 void Shader::setUniformArray(int location, const Glsl::Vec4* vectorArray, std::size_t length)
 {
+#if defined(SFML_SYSTEM_LINUX)
+    #define STATIC_ASSERT(cond) typedef char static_assert[(cond) ? 1 : -1]
+    STATIC_ASSERT(sizeof(Glsl::Vec4) == 4 * 4);
+#else
     static_assert(sizeof(Glsl::Vec4) == 4 * 4, "Vec4 is not 16 bytes");
+#endif
     UniformBinder binder(*this, location);
     assert(vectorArray);
     if (location != -1)
