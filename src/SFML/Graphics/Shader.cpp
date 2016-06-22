@@ -1091,6 +1091,8 @@ bool Shader::compile(const char* vertexShaderCode, const char* geometryShaderCod
 
     m_shaderProgram = castFromGlHandle(shaderProgram);
 
+    m_colorLocation = getUniformLocation("u_colour");
+
     // Force an OpenGL flush, so that the shader will appear updated
     // in all contexts immediately (solves problems in multi-threaded apps)
     glCheck(glFlush());
@@ -1138,6 +1140,15 @@ int Shader::getUniformLocation(const std::string& name)
 
         return location;
     }
+}
+
+Shader* Shader::s_defaultShader;
+int Shader::s_defaultShaderTextureUniformLocation = -1;
+
+void Shader::setDefaultShader(Shader* shader)
+{
+    s_defaultShader = shader;
+    s_defaultShaderTextureUniformLocation = s_defaultShader->getUniformLocation("u_tex");
 }
 
 } // namespace sf

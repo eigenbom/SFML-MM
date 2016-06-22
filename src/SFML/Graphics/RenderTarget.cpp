@@ -260,19 +260,28 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         if (textureId != m_cache.lastTextureId || states.textureTransform != NULL)
             applyTexture(states);
 
-		// Apply the color.
-		if (states.color != m_cache.lastColor)
-		{
-			Shader* s = (Shader*)states.shader;
-			Glsl::Vec4 colour(states.color);
-			int spriteColourLocation = s->getUniformLocation("sprite_colour");
-			s->setUniform(spriteColourLocation, colour);
-			m_cache.lastColor = states.color;
-		}
-
         // Apply the shader
-        if (states.shader)
-            applyShader(states.shader);
+        Shader* shader = states.shader ? (Shader*)states.shader : Shader::getDefaultShader();
+
+        if (!states.shader)
+        {
+            // Using the default shader, so set the texture uniform first before we bind.
+            int texLocation = Shader::getDefaultShaderTextureUniformLocation();
+            shader->setUniform(texLocation, *states.texture);
+        }
+
+        // FIXME: Only bind shader when it changes.
+        applyShader(shader);
+
+        // Apply the color.
+        if (states.color != m_cache.lastColor)
+        {
+            Glsl::Vec4 colour(states.color);
+            // FIXME: Don't look this up all the time somehow.
+            int spriteColourLocation = shader->getUniformLocation("u_colour");
+            shader->setUniform(spriteColourLocation, colour);
+            m_cache.lastColor = states.color;
+        }
 
         // If we pre-transform the vertices, we must use our internal vertex cache
         if (useVertexCache)

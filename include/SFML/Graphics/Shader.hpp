@@ -742,7 +742,16 @@ public:
     ////////////////////////////////////////////////////////////
     int getUniformLocation(const std::string& name);
 
+    int getColorLocation();
+
+    static void setDefaultShader(Shader* shader);
+    static Shader* getDefaultShader();
+    static int getDefaultShaderTextureUniformLocation();
+
 private:
+
+    static Shader* s_defaultShader;
+    static int s_defaultShaderTextureUniformLocation;
 
     ////////////////////////////////////////////////////////////
     /// \brief Compile the shader(s) and create the program
@@ -791,7 +800,23 @@ private:
     TextureTable m_textures;       ///< Texture variables in the shader, mapped to their location
     UniformTable m_uniforms;       ///< Parameters location cache
     bool         m_alwaysBind;
+    int          m_colorLocation;  // HACK
 };
+
+inline int Shader::getColorLocation()
+{
+    return m_colorLocation;
+}
+
+inline Shader* Shader::getDefaultShader()
+{
+    return s_defaultShader;
+}
+
+inline int Shader::getDefaultShaderTextureUniformLocation()
+{
+    return s_defaultShaderTextureUniformLocation;
+}
 
 inline void Shader::setBindAlways(bool always)
 {

@@ -28,6 +28,7 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Shader.hpp>
 #include <cstdlib>
 
 //#define TRANSFORM_VERTS
@@ -186,6 +187,14 @@ void Sprite::drawAdvanced(RenderTarget& target, RenderStates states) const
 		states.textureTransform = &m_textureTransform;
 #endif
         states.texture = m_texture;
+
+        Shader* shader = (Shader*)states.shader;
+        if (shader)
+        {
+            int location = shader->getColorLocation();
+            shader->setUniform(location, m_color);
+        }
+
         target.drawAdvanced(m_vertices, 4, TrianglesStrip, states);
     }
 }
