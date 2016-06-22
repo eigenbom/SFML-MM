@@ -31,12 +31,13 @@
 #include <SFML/Graphics/Export.hpp>
 #include <SFML/Graphics/BlendMode.hpp>
 #include <SFML/Graphics/Transform.hpp>
-
+#include <SFML/Graphics/Color.hpp>
 
 namespace sf
 {
 class Shader;
 class Texture;
+class Color;
 
 ////////////////////////////////////////////////////////////
 /// \brief Define the states used for drawing to a RenderTarget
@@ -115,6 +116,7 @@ public:
     BlendMode      blendMode; ///< Blending mode
     Transform      transform; ///< Transform
 	const Transform* textureTransform;
+	Color          color;
     const Texture* texture;   ///< Texture
     const Shader*  shader;    ///< Shader
 };

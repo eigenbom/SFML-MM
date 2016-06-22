@@ -45,7 +45,8 @@ blendMode(BlendAlpha),
 transform(),
 texture  (NULL),
 shader   (NULL),
-textureTransform(NULL)
+textureTransform(NULL),
+color(NULL)
 {
 }
 
@@ -56,7 +57,8 @@ blendMode(BlendAlpha),
 transform(theTransform),
 texture  (NULL),
 shader   (NULL),
-textureTransform(NULL)
+textureTransform(NULL),
+color(NULL)
 {
 }
 
@@ -67,7 +69,8 @@ blendMode(theBlendMode),
 transform(),
 texture  (NULL),
 shader   (NULL),
-textureTransform(NULL)
+textureTransform(NULL),
+color(NULL)
 {
 }
 
@@ -78,7 +81,8 @@ blendMode(BlendAlpha),
 transform(),
 texture  (theTexture),
 shader   (NULL),
-textureTransform(NULL)
+textureTransform(NULL),
+color(NULL)
 {
 }
 
@@ -89,7 +93,8 @@ blendMode(BlendAlpha),
 transform(),
 texture  (NULL),
 shader   (theShader),
-textureTransform(NULL)
+textureTransform(NULL),
+color(NULL)
 {
 }
 
@@ -101,7 +106,8 @@ blendMode(theBlendMode),
 transform(theTransform),
 texture  (theTexture),
 shader   (theShader),
-textureTransform(NULL)
+textureTransform(NULL),
+color(NULL)
 {
 }
 

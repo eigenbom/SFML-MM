@@ -37,8 +37,9 @@ namespace sf
 {
 ////////////////////////////////////////////////////////////
 Sprite::Sprite() :
-m_texture    (NULL),
-m_textureRect()
+m_texture(NULL),
+m_textureRect(),
+m_color(Color::White)
 {
 }
 
@@ -46,7 +47,8 @@ m_textureRect()
 ////////////////////////////////////////////////////////////
 Sprite::Sprite(const Texture& texture) :
 m_texture    (NULL),
-m_textureRect()
+m_textureRect(),
+m_color(Color::White)
 {
     setTexture(texture);
 }
@@ -55,7 +57,8 @@ m_textureRect()
 ////////////////////////////////////////////////////////////
 Sprite::Sprite(const Texture& texture, const IntRect& rectangle) :
 m_texture    (NULL),
-m_textureRect()
+m_textureRect(),
+m_color(Color::White)
 {
     setTexture(texture);
     setTextureRect(rectangle);
@@ -91,11 +94,24 @@ void Sprite::setTextureRect(const IntRect& rectangle)
 ////////////////////////////////////////////////////////////
 void Sprite::setColor(const Color& color)
 {
-    // Update the vertices' color
-    m_vertices[0].color = color;
-    m_vertices[1].color = color;
-    m_vertices[2].color = color;
-    m_vertices[3].color = color;
+	static bool s_setColor = false;
+	if (s_setColor)
+	{
+		// Update the vertices' color
+		m_vertices[0].color = color;
+		m_vertices[1].color = color;
+		m_vertices[2].color = color;
+		m_vertices[3].color = color;
+	}
+	else
+	{
+		// Vertices are always white.
+		m_vertices[0].color = Color::White;
+		m_vertices[1].color = Color::White;
+		m_vertices[2].color = Color::White;
+		m_vertices[3].color = Color::White;
+		m_color = color;
+	}
 }
 
 
@@ -116,7 +132,11 @@ const IntRect& Sprite::getTextureRect() const
 ////////////////////////////////////////////////////////////
 const Color& Sprite::getColor() const
 {
+#if defined(TRANSFORM_VERTS)
     return m_vertices[0].color;
+#else
+	return m_color;
+#endif
 }
 
 
@@ -147,6 +167,7 @@ void Sprite::draw(RenderTarget& target, RenderStates states) const
 #else
 		states.transform *= getTransform() * m_vertexTransform;
 		states.textureTransform = &m_textureTransform;
+		states.color = m_color;
 #endif
         states.texture = m_texture;
         target.draw(m_vertices, 4, TrianglesStrip, states);

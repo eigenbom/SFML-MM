@@ -260,6 +260,16 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         if (textureId != m_cache.lastTextureId || states.textureTransform != NULL)
             applyTexture(states);
 
+		// Apply the color.
+		if (states.color != m_cache.lastColor)
+		{
+			Shader* s = (Shader*)states.shader;
+			Glsl::Vec4 colour(states.color);
+			int spriteColourLocation = s->getUniformLocation("sprite_colour");
+			s->setUniform(spriteColourLocation, colour);
+			m_cache.lastColor = states.color;
+		}
+
         // Apply the shader
         if (states.shader)
             applyShader(states.shader);
