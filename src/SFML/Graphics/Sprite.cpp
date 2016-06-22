@@ -142,12 +142,13 @@ void Sprite::draw(RenderTarget& target, RenderStates states) const
 {
     if (m_texture)
     {
+#if defined(TRANSFORM_VERTS)
         states.transform *= getTransform();
-        states.texture = m_texture;
-#if !defined(TRANSFORM_VERTS)
-		// If not transforming verts we have to set the texture transform matrix.
+#else
+		states.transform *= getTransform() * m_vertexTransform;
 		states.textureTransform = &m_textureTransform;
 #endif
+        states.texture = m_texture;
         target.draw(m_vertices, 4, TrianglesStrip, states);
     }
 }
@@ -157,9 +158,13 @@ void Sprite::drawAdvanced(RenderTarget& target, RenderStates states) const
 {
     if (m_texture)
     {
+#if defined(TRANSFORM_VERTS)
         states.transform *= getTransform();
-        states.texture = m_texture;
+#else
+		states.transform *= getTransform() * m_vertexTransform;
 		states.textureTransform = &m_textureTransform;
+#endif
+        states.texture = m_texture;
         target.drawAdvanced(m_vertices, 4, TrianglesStrip, states);
     }
 }
@@ -169,10 +174,22 @@ void Sprite::updatePositions()
 {
     FloatRect bounds = getLocalBounds();
 
+#if defined(TRANSFORM_VERTS)
     m_vertices[0].position = Vector2f(0, 0);
     m_vertices[1].position = Vector2f(0, bounds.height);
     m_vertices[2].position = Vector2f(bounds.width, 0);
     m_vertices[3].position = Vector2f(bounds.width, bounds.height);
+#else
+	m_vertices[0].position = Vector2f(0, 0);
+	m_vertices[1].position = Vector2f(0, 1.0f);
+	m_vertices[2].position = Vector2f(1.0f, 0);
+	m_vertices[3].position = Vector2f(1.0f, 1.0f);
+	m_vertexTransform = Transform(
+		bounds.width, 0.0f, 0.0f,
+		0.0f, bounds.height, 0.0f,
+		0.0f, 0.0f, 1.0f
+		);
+#endif
 }
 
 

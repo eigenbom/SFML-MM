@@ -221,6 +221,7 @@ private:
     const Texture* m_texture;     ///< Texture of the sprite
     IntRect        m_textureRect; ///< Rectangle defining the area of the source texture to display
 	Transform      m_textureTransform;
+	Transform      m_vertexTransform;
 };
 
 } // namespace sf
