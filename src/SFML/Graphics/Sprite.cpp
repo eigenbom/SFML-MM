@@ -30,6 +30,8 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <cstdlib>
 
+//#define TRANSFORM_VERTS
+
 
 namespace sf
 {
@@ -63,12 +65,14 @@ m_textureRect()
 ////////////////////////////////////////////////////////////
 void Sprite::setTexture(const Texture& texture, bool resetRect)
 {
-    // Recompute the texture area if requested, or if there was no valid texture & rect before
-    if (resetRect || (!m_texture && (m_textureRect == sf::IntRect())))
-        setTextureRect(IntRect(0, 0, texture.getSize().x, texture.getSize().y));
+	const Texture* oldTexture = m_texture;
 
-    // Assign the new texture
-    m_texture = &texture;
+	// Assign the new texture
+	m_texture = &texture;
+
+    // Recompute the texture area if requested, or if there was no valid texture & rect before
+    if (resetRect || (!oldTexture && (m_textureRect == sf::IntRect())))
+        setTextureRect(IntRect(0, 0, texture.getSize().x, texture.getSize().y));
 }
 
 
@@ -140,6 +144,10 @@ void Sprite::draw(RenderTarget& target, RenderStates states) const
     {
         states.transform *= getTransform();
         states.texture = m_texture;
+#if !defined(TRANSFORM_VERTS)
+		// If not transforming verts we have to set the texture transform matrix.
+		states.textureTransform = &m_textureTransform;
+#endif
         target.draw(m_vertices, 4, TrianglesStrip, states);
     }
 }
@@ -151,6 +159,7 @@ void Sprite::drawAdvanced(RenderTarget& target, RenderStates states) const
     {
         states.transform *= getTransform();
         states.texture = m_texture;
+		states.textureTransform = &m_textureTransform;
         target.drawAdvanced(m_vertices, 4, TrianglesStrip, states);
     }
 }
@@ -175,10 +184,36 @@ void Sprite::updateTexCoords()
     float top    = static_cast<float>(m_textureRect.top);
     float bottom = top + m_textureRect.height;
 
-    m_vertices[0].texCoords = Vector2f(left, top);
-    m_vertices[1].texCoords = Vector2f(left, bottom);
-    m_vertices[2].texCoords = Vector2f(right, top);
-    m_vertices[3].texCoords = Vector2f(right, bottom);
+#if defined(TRANSFORM_VERTS)
+	m_vertices[0].texCoords = Vector2f(left, top);
+	m_vertices[1].texCoords = Vector2f(left, bottom);
+	m_vertices[2].texCoords = Vector2f(right, top);
+	m_vertices[3].texCoords = Vector2f(right, bottom);
+#else
+	m_vertices[0].texCoords = Vector2f(0.0f, 0.0f);
+	m_vertices[1].texCoords = Vector2f(0.0f, 1.0f);
+	m_vertices[2].texCoords = Vector2f(1.0f, 0.0f);
+	m_vertices[3].texCoords = Vector2f(1.0f, 1.0f);
+
+	Vector2u actualSize = m_texture->getActualSize();
+	float xscale = (right - left) / (float)actualSize.x;
+	float yscale = (bottom - top) / (float)actualSize.y;
+	float xorigin = left / (float)actualSize.x;
+	float yorigin = top / (float)actualSize.y;
+
+	if (m_texture->m_pixelsFlipped)
+	{
+		yscale *= -1.0f;
+		Vector2u size = m_texture->getSize();
+		yorigin += size.y / (float)actualSize.y;
+	}
+
+	m_textureTransform = Transform(
+		xscale, 0.0f, xorigin,
+		0.0f, yscale, yorigin,
+		0.0f, 0.0f, 1.0f
+	);
+#endif
 }
 
 } // namespace sf

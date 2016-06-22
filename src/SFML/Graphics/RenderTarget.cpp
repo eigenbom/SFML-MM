@@ -101,7 +101,7 @@ void RenderTarget::clear(const Color& color)
     if (activate(true))
     {
         // Unbind texture to fix RenderTexture preventing clear
-        applyTexture(NULL);
+        applyTexture(RenderStates());
 
         glCheck(glClearColor(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
         glCheck(glClear(GL_COLOR_BUFFER_BIT));
@@ -257,8 +257,8 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 
         // Apply the texture
         Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
-        if (textureId != m_cache.lastTextureId)
-            applyTexture(states.texture);
+        if (textureId != m_cache.lastTextureId || states.textureTransform != NULL)
+            applyTexture(states);
 
         // Apply the shader
         if (states.shader)
@@ -302,7 +302,7 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         // If the texture we used to draw belonged to a RenderTexture, then forcibly unbind that texture.
         // This prevents a bug where some drivers do not clear RenderTextures properly.
         if (states.texture && states.texture->m_fboAttachment)
-            applyTexture(NULL);
+            applyTexture(RenderStates());
 
         // Update the cache
         m_cache.useVertexCache = useVertexCache;
@@ -363,8 +363,8 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
 
     // Apply the texture
     Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
-    if (textureId != m_cache.lastTextureId)
-        applyTexture(states.texture);
+    if (textureId != m_cache.lastTextureId || states.textureTransform)
+        applyTexture(states);
 
     // If we pre-transform the vertices, we must use our internal vertex cache
     if (useVertexCache)
@@ -401,7 +401,7 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     // If the texture we used to draw belonged to a RenderTexture, then forcibly unbind that texture.
     // This prevents a bug where some drivers do not clear RenderTextures properly.
     if (states.texture && states.texture->m_fboAttachment)
-        applyTexture(NULL);
+        applyTexture(RenderStates());
 
     // Update the cache
     m_cache.useVertexCache = useVertexCache;
@@ -492,7 +492,7 @@ void RenderTarget::resetGLStates()
         // Apply the default SFML states
         applyBlendMode(BlendAlpha);
         applyTransform(Transform::Identity);
-        applyTexture(NULL);
+        applyTexture(RenderStates());
         if (shaderAvailable)
             applyShader(NULL);
 
@@ -593,9 +593,11 @@ void RenderTarget::applyTransform(const Transform& transform)
 
 
 ////////////////////////////////////////////////////////////
-void RenderTarget::applyTexture(const Texture* texture)
+void RenderTarget::applyTexture(const RenderStates& states)
 {
-    Texture::bind(texture, Texture::Pixels);
+	const Texture* texture = states.texture;
+	const Transform* textureTransform = states.textureTransform;
+	Texture::bind(texture, Texture::Pixels, textureTransform);
 
     m_cache.lastTextureId = texture ? texture->m_cacheId : 0;
 }

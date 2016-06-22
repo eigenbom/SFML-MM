@@ -114,6 +114,7 @@ public:
     ////////////////////////////////////////////////////////////
     BlendMode      blendMode; ///< Blending mode
     Transform      transform; ///< Transform
+	const Transform* textureTransform;
     const Texture* texture;   ///< Texture
     const Shader*  shader;    ///< Shader
 };
