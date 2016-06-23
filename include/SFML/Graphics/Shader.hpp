@@ -740,17 +740,24 @@ public:
     /// \return Location ID of the uniform, or -1 if not found
     ///
     ////////////////////////////////////////////////////////////
-    int getUniformLocation(const std::string& name);
+    int getUniformLocation(const std::string& name, bool warnIfMissing = true);
 
     int getColorLocation();
 
-    static void setDefaultShader(Shader* shader);
-    static Shader* getDefaultShader();
+    enum DefaultShaderType
+    {
+        Textured,
+        Untextured
+    };
+
+    static void setDefaultShader(DefaultShaderType type, Shader* shader);
+    static Shader* getDefaultShader(DefaultShaderType type);
     static int getDefaultShaderTextureUniformLocation();
 
 private:
 
     static Shader* s_defaultShader;
+    static Shader* s_defaultShaderUntextured;
     static int s_defaultShaderTextureUniformLocation;
 
     ////////////////////////////////////////////////////////////
@@ -808,9 +815,9 @@ inline int Shader::getColorLocation()
     return m_colorLocation;
 }
 
-inline Shader* Shader::getDefaultShader()
+inline Shader* Shader::getDefaultShader(Shader::DefaultShaderType type)
 {
-    return s_defaultShader;
+    return type == Shader::Textured ? s_defaultShader : s_defaultShaderUntextured;
 }
 
 inline int Shader::getDefaultShaderTextureUniformLocation()

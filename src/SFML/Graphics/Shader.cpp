@@ -1091,7 +1091,7 @@ bool Shader::compile(const char* vertexShaderCode, const char* geometryShaderCod
 
     m_shaderProgram = castFromGlHandle(shaderProgram);
 
-    m_colorLocation = getUniformLocation("u_colour");
+    m_colorLocation = getUniformLocation("u_colour", false);
 
     // Force an OpenGL flush, so that the shader will appear updated
     // in all contexts immediately (solves problems in multi-threaded apps)
@@ -1120,7 +1120,7 @@ void Shader::bindTextures() const
 
 
 ////////////////////////////////////////////////////////////
-int Shader::getUniformLocation(const std::string& name)
+int Shader::getUniformLocation(const std::string& name, bool warnIfMissing)
 {
     // Check the cache
     UniformTable::const_iterator it = m_uniforms.find(name);
@@ -1135,7 +1135,7 @@ int Shader::getUniformLocation(const std::string& name)
         int location = GLEXT_glGetUniformLocation(castToGlHandle(m_shaderProgram), name.c_str());
         m_uniforms.insert(std::make_pair(name, location));
 
-        if (location == -1)
+        if (location == -1 && warnIfMissing)
             err() << "Parameter \"" << name << "\" not found in shader" << std::endl;
 
         return location;
@@ -1143,12 +1143,21 @@ int Shader::getUniformLocation(const std::string& name)
 }
 
 Shader* Shader::s_defaultShader;
+Shader* Shader::s_defaultShaderUntextured;
 int Shader::s_defaultShaderTextureUniformLocation = -1;
 
-void Shader::setDefaultShader(Shader* shader)
+void Shader::setDefaultShader(DefaultShaderType type, Shader* shader)
 {
-    s_defaultShader = shader;
-    s_defaultShaderTextureUniformLocation = s_defaultShader->getUniformLocation("u_tex");
+    if (type == Textured)
+    {
+        s_defaultShader = shader;
+        s_defaultShaderTextureUniformLocation = s_defaultShader->getUniformLocation("u_tex");
+    }
+    else
+    {
+        assert(type == Untextured);
+        s_defaultShaderUntextured = shader;
+    }
 }
 
 } // namespace sf

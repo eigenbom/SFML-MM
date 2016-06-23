@@ -256,9 +256,10 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
             applyBlendMode(states.blendMode);
 
         // Apply the shader
-		Shader* shader = states.shader ? (Shader*)states.shader : Shader::getDefaultShader();
+        Shader::DefaultShaderType defaultShaderType = states.texture == NULL ? Shader::Untextured : Shader::Textured;
+        Shader* shader = states.shader ? (Shader*)states.shader : Shader::getDefaultShader(defaultShaderType);
 
-        if (!states.shader)
+        if (!states.shader && defaultShaderType == Shader::Textured)
         {
             // If there is no shader set, this means SFML would have used the fixed function
 			// pipeline to render without a shader. This implies a single texture is used, because
@@ -279,13 +280,15 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 
         // Apply the color.
 		Color color = states.useColor ? states.color : Color::White;
-        if (color != m_cache.lastColor)
+        // HACK: Always set the colour for now until we iron out all the bugs.
+        // This should only change the colour if it has changed, or if the shader has changed.
+        //if (color != m_cache.lastColor)
         {
             Glsl::Vec4 colorVec(color);
-            // FIXME: Don't look this up all the time somehow.
-			//int spriteColourLocation = shader->getColorLocation();
-			//shader->setUniform(spriteColourLocation, colorVec);
-            //m_cache.lastColor = color;
+			int colorLocation = shader->getColorLocation();
+            // HACK: We don't set this via the Shader class because we don't want to bind again.
+            glCheck(GLEXT_glUniform4f(colorLocation, colorVec.x, colorVec.y, colorVec.z, colorVec.w));
+            m_cache.lastColor = color;
         }
 
         // If we pre-transform the vertices, we must use our internal vertex cache
@@ -313,7 +316,9 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         GLenum mode = modes[type];
 
 #if defined(_DEBUG)
+        // There should always be a shader bound, since we fall back to a default shader.
         GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+        assert(currentShaderHandle != -1);
 #endif
 
         // Draw the primitives
@@ -415,6 +420,7 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     GLenum mode = modes[type];
 
 #if defined(_DEBUG)
+    // There must be a shader bound for this version to be used.
     GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
     assert(currentShaderHandle != 0);
 #endif
