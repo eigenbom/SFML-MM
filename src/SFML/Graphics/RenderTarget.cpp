@@ -255,20 +255,24 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         if (states.blendMode != m_cache.lastBlendMode)
             applyBlendMode(states.blendMode);
 
-        // Apply the texture
-        Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
-        if (textureId != m_cache.lastTextureId || states.textureTransform != NULL)
-            applyTexture(states);
-
         // Apply the shader
-        Shader* shader = states.shader ? (Shader*)states.shader : Shader::getDefaultShader();
+		Shader* shader = states.shader ? (Shader*)states.shader : Shader::getDefaultShader();
 
         if (!states.shader)
         {
-            // Using the default shader, so set the texture uniform first before we bind.
+            // If there is no shader set, this means SFML would have used the fixed function
+			// pipeline to render without a shader. This implies a single texture is used, because
+			// SFML doesn't use texture combiners so it's useless to specify multiple textures.
+			// We therefore need to set u_tex in our fixed function default shader to the
+			// required texture.
             int texLocation = Shader::getDefaultShaderTextureUniformLocation();
-            shader->setUniform(texLocation, *states.texture);
+			shader->setUniform(texLocation, sf::Shader::CurrentTextureType());
         }
+
+		// Apply the texture
+		Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
+		if (textureId != m_cache.lastTextureId || states.textureTransform != NULL)
+			applyTexture(states);
 
         // FIXME: Only bind shader when it changes.
         applyShader(shader);
@@ -279,9 +283,9 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         {
             Glsl::Vec4 colorVec(color);
             // FIXME: Don't look this up all the time somehow.
-			int spriteColourLocation = shader->getColorLocation();
-			shader->setUniform(spriteColourLocation, colorVec);
-            m_cache.lastColor = color;
+			//int spriteColourLocation = shader->getColorLocation();
+			//shader->setUniform(spriteColourLocation, colorVec);
+            //m_cache.lastColor = color;
         }
 
         // If we pre-transform the vertices, we must use our internal vertex cache

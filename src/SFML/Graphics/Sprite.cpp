@@ -31,7 +31,7 @@
 #include <SFML/Graphics/Shader.hpp>
 #include <cstdlib>
 
-//#define TRANSFORM_VERTS
+#define TRANSFORM_VERTS
 
 
 namespace sf
@@ -95,7 +95,7 @@ void Sprite::setTextureRect(const IntRect& rectangle)
 ////////////////////////////////////////////////////////////
 void Sprite::setColor(const Color& color)
 {
-	static bool s_setColor = false;
+	static bool s_setColor = true;
 	if (s_setColor)
 	{
 		// Update the vertices' color
