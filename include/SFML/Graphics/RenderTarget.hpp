@@ -235,6 +235,16 @@ public:
     ////////////////////////////////////////////////////////////
     void draw(const Drawable& drawable, const RenderStates& states = RenderStates::Default);
 
+    ////////////////////////////////////////////////////////////
+    /// \brief Draw a drawable object to the render target.
+    ///
+    /// This version will not bind or unbind a shader. You MUST bind a shader
+    /// yourself before calling it.
+    ///
+    /// \param drawable Object to draw
+    /// \param states   Render states to use for drawing
+    ///
+    ////////////////////////////////////////////////////////////
     void drawAdvanced(const Drawable& drawable, const RenderStates& states = RenderStates::Default);
 
     ////////////////////////////////////////////////////////////
