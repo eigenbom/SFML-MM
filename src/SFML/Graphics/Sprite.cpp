@@ -169,6 +169,7 @@ void Sprite::draw(RenderTarget& target, RenderStates states) const
 		states.transform *= getTransform() * m_vertexTransform;
 		states.textureTransform = &m_textureTransform;
 		states.color = m_color;
+		states.useColor = true;
 #endif
         states.texture = m_texture;
         target.draw(m_vertices, 4, TrianglesStrip, states);

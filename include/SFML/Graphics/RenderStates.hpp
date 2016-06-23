@@ -117,6 +117,7 @@ public:
     Transform      transform; ///< Transform
 	const Transform* textureTransform;
 	Color          color;
+	bool           useColor;
     const Texture* texture;   ///< Texture
     const Shader*  shader;    ///< Shader
 };

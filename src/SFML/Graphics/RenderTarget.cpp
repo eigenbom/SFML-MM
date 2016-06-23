@@ -274,13 +274,14 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         applyShader(shader);
 
         // Apply the color.
-        if (states.color != m_cache.lastColor)
+		Color color = states.useColor ? states.color : Color::White;
+        if (color != m_cache.lastColor)
         {
-            Glsl::Vec4 colour(states.color);
+            Glsl::Vec4 colorVec(color);
             // FIXME: Don't look this up all the time somehow.
-            int spriteColourLocation = shader->getUniformLocation("u_colour");
-            shader->setUniform(spriteColourLocation, colour);
-            m_cache.lastColor = states.color;
+			int spriteColourLocation = shader->getColorLocation();
+			shader->setUniform(spriteColourLocation, colorVec);
+            m_cache.lastColor = color;
         }
 
         // If we pre-transform the vertices, we must use our internal vertex cache
