@@ -431,7 +431,8 @@ private:
     ////////////////////////////////////////////////////////////
     View        m_defaultView; ///< Default view
     View		m_view;        ///< Current view
-
+	Uint32      m_spriteVertexVBO;
+	Uint32      m_spriteIndexVBO;
     static StatesCache s_cache;       ///< Render states cache
 };
 

@@ -234,7 +234,7 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
             resetGLStates();
 
         // Check if the vertex count is low enough so that we can pre-transform them
-        bool useVertexCache = (vertexCount <= StatesCache::VertexCacheSize);
+        bool useVertexCache = (vertexCount <= StatesCache::VertexCacheSize) && !states.useVBO;
         if (useVertexCache)
         {
             // Pre-transform the vertices and store them into the vertex cache
@@ -309,14 +309,29 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
                 vertices = NULL;
         }
 
-        // Setup the pointers to the vertices' components
-        if (vertices)
-        {
-            const char* data = reinterpret_cast<const char*>(vertices);
-            glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), data + 0));
-            glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
-            glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
-        }
+		if (states.useVBO)
+		{
+			// Specify the vertices.
+			glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
+			glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), (void*)0));
+			glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)8));
+			glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12));
+
+			// Specify the indices.
+			glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
+			glCheck(glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0));
+
+			glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+			glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+		}
+		else if (vertices)
+		{
+			// Setup the pointers to the vertices' components
+			const char* data = reinterpret_cast<const char*>(vertices);
+			glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), data + 0));
+			glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
+			glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
+		}
 
         // Find the OpenGL primitive type
         static const GLenum modes[] = {GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
@@ -376,7 +391,7 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
         resetGLStates();
 
     // Check if the vertex count is low enough so that we can pre-transform them
-    bool useVertexCache = (vertexCount <= StatesCache::VertexCacheSize);
+    bool useVertexCache = (vertexCount <= StatesCache::VertexCacheSize) && !states.useVBO;
     if (useVertexCache)
     {
         // Pre-transform the vertices and store them into the vertex cache
@@ -433,14 +448,29 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
             vertices = NULL;
     }
 
-    // Setup the pointers to the vertices' components
-    if (vertices)
-    {
-        const char* data = reinterpret_cast<const char*>(vertices);
-        glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), data + 0));
-        glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
-        glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
-    }
+	if (states.useVBO)
+	{
+		// Specify the vertices.
+		glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
+		glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), (void*)0));
+		glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)8));
+		glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12));
+
+		// Specify the indices.
+		glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
+		glCheck(glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0));
+
+		glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+		glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+	}
+	else if (vertices)
+	{
+		// Setup the pointers to the vertices' components
+		const char* data = reinterpret_cast<const char*>(vertices);
+		glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), data + 0));
+		glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
+		glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
+	}
 
     // Find the OpenGL primitive type
     static const GLenum modes[] = { GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
@@ -565,6 +595,37 @@ void RenderTarget::initialize()
 
     // Set GL states only on first draw, so that we don't pollute user's states
     s_cache.glStatesSet = false;
+
+	Vertex vertices[4];
+	vertices[0].position = Vector2f(0, 0);
+	vertices[1].position = Vector2f(0, 1.0f);
+	vertices[2].position = Vector2f(1.0f, 0);
+	vertices[3].position = Vector2f(1.0f, 1.0f);
+
+	vertices[0].texCoords = Vector2f(0.0f, 0.0f);
+	vertices[1].texCoords = Vector2f(0.0f, 1.0f);
+	vertices[2].texCoords = Vector2f(1.0f, 0.0f);
+	vertices[3].texCoords = Vector2f(1.0f, 1.0f);
+
+	vertices[0].color = Color::White;
+	vertices[1].color = Color::White;
+	vertices[2].color = Color::White;
+	vertices[3].color = Color::White;
+
+	Uint16 indices[4] = { 0, 1, 2, 3 };
+
+	// Vertices
+	glCheck(glGenBuffers(1, &m_spriteVertexVBO));
+	glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
+	glCheck(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0].position.x, GL_STATIC_DRAW));
+
+	// Indices
+	glCheck(glGenBuffers(1, &m_spriteIndexVBO));
+	glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
+	glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW));
+
+	glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 }
 
 

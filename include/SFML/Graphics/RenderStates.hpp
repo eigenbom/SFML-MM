@@ -118,6 +118,7 @@ public:
 	const Transform* textureTransform;
 	Color          color;
 	bool           useColor;
+	bool           useVBO;
     const Texture* texture;   ///< Texture
     const Shader*  shader;    ///< Shader
 };

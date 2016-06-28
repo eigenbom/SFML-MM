@@ -929,8 +929,6 @@ extern int sfogl_ext_ARB_geometry_shader4;
 #define GL_ZOOM_X 0x0D16
 #define GL_ZOOM_Y 0x0D17
 
-
-
 #ifndef GL_EXT_blend_minmax
 #define GL_EXT_blend_minmax 1
 extern void (GL_FUNCPTR *sf_ptrc_glBlendEquationEXT)(GLenum);
@@ -1253,6 +1251,21 @@ extern void (GL_FUNCPTR *sf_ptrc_glFramebufferTextureLayerARB)(GLenum, GLenum, G
 extern void (GL_FUNCPTR *sf_ptrc_glProgramParameteriARB)(GLuint, GLenum, GLint);
 #define glProgramParameteriARB sf_ptrc_glProgramParameteriARB
 #endif // GL_ARB_geometry_shader4
+
+#ifndef GL_VBO_support
+#define GL_VBO_SUPPORT 1
+
+#define GL_ARRAY_BUFFER 0x8892
+#define GL_ELEMENT_ARRAY_BUFFER 0x8893
+#define GL_STATIC_DRAW 0x88E4
+
+extern void (GL_FUNCPTR *sf_ptrc_glGenBuffers)(GLsizei, GLuint*);
+#define glGenBuffers sf_ptrc_glGenBuffers
+extern void (GL_FUNCPTR *sf_ptrc_glBindBuffer)(GLenum, GLuint);
+#define glBindBuffer sf_ptrc_glBindBuffer
+extern void (GL_FUNCPTR *sf_ptrc_glBufferData)(GLenum, GLsizeiptr, const GLvoid*, GLenum);
+#define glBufferData sf_ptrc_glBufferData
+#endif
 
 GLAPI void APIENTRY glAccum(GLenum, GLfloat);
 GLAPI void APIENTRY glAlphaFunc(GLenum, GLfloat);

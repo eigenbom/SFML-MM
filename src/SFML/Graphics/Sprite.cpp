@@ -153,11 +153,13 @@ void Sprite::draw(RenderTarget& target, RenderStates states) const
     {
 #if defined(TRANSFORM_VERTS)
         states.transform *= getTransform();
+		states.useVBO = false;
 #else
 		states.transform *= getTransform() * m_vertexTransform;
 		states.textureTransform = &m_textureTransform;
 		states.color = m_color;
 		states.useColor = true;
+		states.useVBO = true;
 #endif
         states.texture = m_texture;
         target.draw(m_vertices, 4, TrianglesStrip, states);
@@ -171,11 +173,13 @@ void Sprite::drawAdvanced(RenderTarget& target, RenderStates states) const
     {
 #if defined(TRANSFORM_VERTS)
         states.transform *= getTransform();
+		states.useVBO = false;
 #else
 		states.transform *= getTransform() * m_vertexTransform;
 		states.textureTransform = &m_textureTransform;
 		states.color = m_color;
 		states.useColor = true;
+		states.useVBO = true;
 #endif
         states.texture = m_texture;
         target.drawAdvanced(m_vertices, 4, TrianglesStrip, states);
