@@ -430,8 +430,9 @@ private:
     // Member data
     ////////////////////////////////////////////////////////////
     View        m_defaultView; ///< Default view
-    View        m_view;        ///< Current view
-    StatesCache m_cache;       ///< Render states cache
+    View		m_view;        ///< Current view
+
+    static StatesCache s_cache;       ///< Render states cache
 };
 
 } // namespace sf
