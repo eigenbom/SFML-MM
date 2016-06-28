@@ -346,6 +346,13 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     if (!vertices || (vertexCount == 0))
         return;
 
+	// There must be a shader bound for this version to be used.
+	assert(states.shader != NULL);
+#if defined(_DEBUG)
+	GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+	assert(currentShaderHandle != 0);
+#endif
+
     // GL_QUADS is unavailable on OpenGL ES
 #ifdef SFML_OPENGL_ES
     if (type == Quads)
@@ -395,6 +402,19 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     if (textureId != m_cache.lastTextureId || states.textureTransform)
         applyTexture(states);
 
+	// Apply the color.
+	Color color = states.useColor ? states.color : Color::White;
+	// HACK: Always set the colour for now until we iron out all the bugs.
+	// This should only change the colour if it has changed, or if the shader has changed.
+	//if (color != m_cache.lastColor)
+	{
+		Glsl::Vec4 colorVec(color);
+		int colorLocation = states.shader->getColorLocation();
+		// HACK: We don't set this via the Shader class because we don't want to bind again.
+		glCheck(GLEXT_glUniform4f(colorLocation, colorVec.x, colorVec.y, colorVec.z, colorVec.w));
+		m_cache.lastColor = color;
+	}
+
     // If we pre-transform the vertices, we must use our internal vertex cache
     if (useVertexCache)
     {
@@ -418,12 +438,6 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     static const GLenum modes[] = { GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
         GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_QUADS };
     GLenum mode = modes[type];
-
-#if defined(_DEBUG)
-    // There must be a shader bound for this version to be used.
-    GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
-    assert(currentShaderHandle != 0);
-#endif
 
     // Draw the primitives
     glCheck(glDrawArrays(mode, 0, vertexCount));

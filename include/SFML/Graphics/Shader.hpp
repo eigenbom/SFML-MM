@@ -742,7 +742,7 @@ public:
     ////////////////////////////////////////////////////////////
     int getUniformLocation(const std::string& name, bool warnIfMissing = true);
 
-    int getColorLocation();
+	int getColorLocation() const;
 
     enum DefaultShaderType
     {
@@ -810,7 +810,7 @@ private:
     int          m_colorLocation;  // HACK
 };
 
-inline int Shader::getColorLocation()
+inline int Shader::getColorLocation() const
 {
     return m_colorLocation;
 }

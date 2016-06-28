@@ -31,7 +31,7 @@
 #include <SFML/Graphics/Shader.hpp>
 #include <cstdlib>
 
-#define TRANSFORM_VERTS
+//#define TRANSFORM_VERTS
 
 
 namespace sf
@@ -95,24 +95,12 @@ void Sprite::setTextureRect(const IntRect& rectangle)
 ////////////////////////////////////////////////////////////
 void Sprite::setColor(const Color& color)
 {
-	static bool s_setColor = true;
-	if (s_setColor)
-	{
-		// Update the vertices' color
-		m_vertices[0].color = color;
-		m_vertices[1].color = color;
-		m_vertices[2].color = color;
-		m_vertices[3].color = color;
-	}
-	else
-	{
-		// Vertices are always white.
-		m_vertices[0].color = Color::White;
-		m_vertices[1].color = Color::White;
-		m_vertices[2].color = Color::White;
-		m_vertices[3].color = Color::White;
-		m_color = color;
-	}
+	// Vertices are always white.
+	m_vertices[0].color = Color::White;
+	m_vertices[1].color = Color::White;
+	m_vertices[2].color = Color::White;
+	m_vertices[3].color = Color::White;
+	m_color = color;
 }
 
 
@@ -186,16 +174,10 @@ void Sprite::drawAdvanced(RenderTarget& target, RenderStates states) const
 #else
 		states.transform *= getTransform() * m_vertexTransform;
 		states.textureTransform = &m_textureTransform;
+		states.color = m_color;
+		states.useColor = true;
 #endif
         states.texture = m_texture;
-
-        Shader* shader = (Shader*)states.shader;
-        if (shader)
-        {
-            int location = shader->getColorLocation();
-            shader->setUniform(location, m_color);
-        }
-
         target.drawAdvanced(m_vertices, 4, TrianglesStrip, states);
     }
 }
