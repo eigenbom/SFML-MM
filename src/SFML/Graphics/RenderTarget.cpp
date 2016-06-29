@@ -311,6 +311,12 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
                 vertices = NULL;
         }
 
+#if defined(_DEBUG)
+		// There should always be a shader bound, since we fall back to a default shader.
+		GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+		assert(currentShaderHandle != -1);
+#endif
+
 		if (states.useVBO)
 		{
 			// Specify the vertices.
@@ -335,19 +341,16 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 			glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
 		}
 
-        // Find the OpenGL primitive type
-        static const GLenum modes[] = {GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
-                                       GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_QUADS};
-        GLenum mode = modes[type];
+		if (!states.useVBO)
+		{
+			// Find the OpenGL primitive type
+			static const GLenum modes[] = {GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
+										   GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_QUADS};
+			GLenum mode = modes[type];
 
-#if defined(_DEBUG)
-        // There should always be a shader bound, since we fall back to a default shader.
-        GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
-        assert(currentShaderHandle != -1);
-#endif
-
-        // Draw the primitives
-        glCheck(glDrawArrays(mode, 0, vertexCount));
+			// Draw the primitives
+			glCheck(glDrawArrays(mode, 0, vertexCount));
+		}
 
         // Unbind the shader, if any
         if (states.shader)
@@ -474,13 +477,16 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
 		glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
 	}
 
-    // Find the OpenGL primitive type
-    static const GLenum modes[] = { GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
-        GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_QUADS };
-    GLenum mode = modes[type];
+	if (!states.useVBO)
+	{
+		// Find the OpenGL primitive type
+		static const GLenum modes[] = { GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
+			GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_QUADS };
+		GLenum mode = modes[type];
 
-    // Draw the primitives
-    glCheck(glDrawArrays(mode, 0, vertexCount));
+		// Draw the primitives
+		glCheck(glDrawArrays(mode, 0, vertexCount));
+	}
 
     // If the texture we used to draw belonged to a RenderTexture, then forcibly unbind that texture.
     // This prevents a bug where some drivers do not clear RenderTextures properly.
