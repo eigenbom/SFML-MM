@@ -31,6 +31,7 @@
 #include <SFML/Graphics/Export.hpp>
 #include <SFML/Graphics/Image.hpp>
 #include <SFML/Window/GlResource.hpp>
+#include <SFML/Graphics/Transform.hpp>
 
 
 namespace sf
@@ -220,6 +221,8 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     Vector2u getSize() const;
+
+	Vector2u getActualSize() const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Copy the texture pixels to an image
@@ -523,7 +526,7 @@ public:
     /// \param coordinateType Type of texture coordinates to use
     ///
     ////////////////////////////////////////////////////////////
-    static void bind(const Texture* texture, CoordinateType coordinateType = Normalized);
+	static void bind(const Texture* texture, CoordinateType coordinateType = Normalized, const Transform* transform = NULL);
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the maximum texture size allowed
@@ -582,6 +585,11 @@ private:
     bool         m_hasMipmap;     ///< Has the mipmap been generated?
     Uint64       m_cacheId;       ///< Unique number that identifies the texture to the render target's cache
 };
+
+inline Vector2u Texture::getActualSize() const
+{
+	return m_actualSize;
+}
 
 } // namespace sf
 

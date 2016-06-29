@@ -235,6 +235,16 @@ public:
     ////////////////////////////////////////////////////////////
     void draw(const Drawable& drawable, const RenderStates& states = RenderStates::Default);
 
+    ////////////////////////////////////////////////////////////
+    /// \brief Draw a drawable object to the render target.
+    ///
+    /// This version will not bind or unbind a shader. You MUST bind a shader
+    /// yourself before calling it.
+    ///
+    /// \param drawable Object to draw
+    /// \param states   Render states to use for drawing
+    ///
+    ////////////////////////////////////////////////////////////
     void drawAdvanced(const Drawable& drawable, const RenderStates& states = RenderStates::Default);
 
     ////////////////////////////////////////////////////////////
@@ -389,7 +399,7 @@ private:
     /// \param texture Texture to apply
     ///
     ////////////////////////////////////////////////////////////
-    void applyTexture(const Texture* texture);
+	void applyTexture(const RenderStates& states);
 
     ////////////////////////////////////////////////////////////
     /// \brief Apply a new shader
@@ -411,6 +421,7 @@ private:
         bool      viewChanged;    ///< Has the current view changed since last draw?
         BlendMode lastBlendMode;  ///< Cached blending mode
         Uint64    lastTextureId;  ///< Cached texture
+		Color     lastColor;
         bool      useVertexCache; ///< Did we previously use the vertex cache?
         Vertex    vertexCache[VertexCacheSize]; ///< Pre-transformed vertices cache
     };
@@ -419,8 +430,10 @@ private:
     // Member data
     ////////////////////////////////////////////////////////////
     View        m_defaultView; ///< Default view
-    View        m_view;        ///< Current view
-    StatesCache m_cache;       ///< Render states cache
+    View		m_view;        ///< Current view
+	Uint32      m_spriteVertexVBO;
+	Uint32      m_spriteIndexVBO;
+    static StatesCache s_cache;       ///< Render states cache
 };
 
 } // namespace sf

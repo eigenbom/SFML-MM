@@ -79,19 +79,29 @@ namespace
 
 namespace sf
 {
+
+// This is static so that all RenderTargets use the same cache. This isn't thread-safe but
+// we don't render from multiple threads so it's ok. This must be static because we have
+// multiple RenderTargets that all render with the same context, and if they don't share a
+// a cache, the cache is not in sync with the OpenGL state, and rendering can occur with,
+// for example, the wrong vertex array set. When using a separate context for each RenderTarget
+// this isn't a problem, but Moonman shares the main context for all RenderTargets.
+RenderTarget::StatesCache RenderTarget::s_cache;
+
 ////////////////////////////////////////////////////////////
 RenderTarget::RenderTarget() :
 m_defaultView(),
-m_view       (),
-m_cache      ()
+m_view       ()
 {
-    m_cache.glStatesSet = false;
+    s_cache.glStatesSet = false;
 }
 
 
 ////////////////////////////////////////////////////////////
 RenderTarget::~RenderTarget()
 {
+	glCheck(glDeleteBuffers(1, &m_spriteIndexVBO));
+	glCheck(glDeleteBuffers(1, &m_spriteVertexVBO));
 }
 
 
@@ -101,7 +111,7 @@ void RenderTarget::clear(const Color& color)
     if (activate(true))
     {
         // Unbind texture to fix RenderTexture preventing clear
-        applyTexture(NULL);
+        applyTexture(RenderStates());
 
         glCheck(glClearColor(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
         glCheck(glClear(GL_COLOR_BUFFER_BIT));
@@ -113,7 +123,7 @@ void RenderTarget::clear(const Color& color)
 void RenderTarget::setView(const View& view)
 {
     m_view = view;
-    m_cache.viewChanged = true;
+    s_cache.viewChanged = true;
 }
 
 
@@ -222,24 +232,24 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
     if (activate(true))
     {
         // First set the persistent OpenGL states if it's the very first call
-        if (!m_cache.glStatesSet)
+        if (!s_cache.glStatesSet)
             resetGLStates();
 
         // Check if the vertex count is low enough so that we can pre-transform them
-        bool useVertexCache = (vertexCount <= StatesCache::VertexCacheSize);
+        bool useVertexCache = (vertexCount <= StatesCache::VertexCacheSize) && !states.useVBO;
         if (useVertexCache)
         {
             // Pre-transform the vertices and store them into the vertex cache
             for (std::size_t i = 0; i < vertexCount; ++i)
             {
-                Vertex& vertex = m_cache.vertexCache[i];
+                Vertex& vertex = s_cache.vertexCache[i];
                 vertex.position = states.transform * vertices[i].position;
                 vertex.color = vertices[i].color;
                 vertex.texCoords = vertices[i].texCoords;
             }
 
             // Since vertices are transformed, we must use an identity transform to render them
-            if (!m_cache.useVertexCache)
+            if (!s_cache.useVertexCache)
                 applyTransform(Transform::Identity);
         }
         else
@@ -248,40 +258,82 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         }
 
         // Apply the view
-        if (m_cache.viewChanged)
+        if (s_cache.viewChanged)
             applyCurrentView();
 
         // Apply the blend mode
-        if (states.blendMode != m_cache.lastBlendMode)
+        if (states.blendMode != s_cache.lastBlendMode)
             applyBlendMode(states.blendMode);
 
-        // Apply the texture
-        Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
-        if (textureId != m_cache.lastTextureId)
-            applyTexture(states.texture);
-
         // Apply the shader
-        if (states.shader)
-            applyShader(states.shader);
+        Shader::DefaultShaderType defaultShaderType = states.texture == NULL ? Shader::Untextured : Shader::Textured;
+        Shader* shader = states.shader ? (Shader*)states.shader : Shader::getDefaultShader(defaultShaderType);
+
+        if (!states.shader && defaultShaderType == Shader::Textured)
+        {
+            // If there is no shader set, this means SFML would have used the fixed function
+			// pipeline to render without a shader. This implies a single texture is used, because
+			// SFML doesn't use texture combiners so it's useless to specify multiple textures.
+			// We therefore need to set u_tex in our fixed function default shader to the
+			// required texture.
+            int texLocation = Shader::getDefaultShaderTextureUniformLocation();
+			shader->setUniform(texLocation, sf::Shader::CurrentTextureType());
+        }
+
+		// Apply the texture
+		Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
+		if (textureId != s_cache.lastTextureId || states.textureTransform != NULL)
+			applyTexture(states);
+
+        // FIXME: Only bind shader when it changes.
+        applyShader(shader);
+
+        // Apply the color.
+		Color color = states.useColor ? states.color : Color::White;
+        // HACK: Always set the colour for now until we iron out all the bugs.
+        // This should only change the colour if it has changed, or if the shader has changed.
+        //if (color != s_cache.lastColor)
+        {
+            Glsl::Vec4 colorVec(color);
+			int colorLocation = shader->getColorLocation();
+            // HACK: We don't set this via the Shader class because we don't want to bind again.
+            glCheck(GLEXT_glUniform4f(colorLocation, colorVec.x, colorVec.y, colorVec.z, colorVec.w));
+            s_cache.lastColor = color;
+        }
 
         // If we pre-transform the vertices, we must use our internal vertex cache
         if (useVertexCache)
         {
             // ... and if we already used it previously, we don't need to set the pointers again
-            if (!m_cache.useVertexCache)
-                vertices = m_cache.vertexCache;
+            if (!s_cache.useVertexCache)
+                vertices = s_cache.vertexCache;
             else
                 vertices = NULL;
         }
 
-        // Setup the pointers to the vertices' components
-        if (vertices)
-        {
-            const char* data = reinterpret_cast<const char*>(vertices);
-            glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), data + 0));
-            glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
-            glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
-        }
+		if (states.useVBO)
+		{
+			// Specify the vertices.
+			glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
+			glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), (void*)0));
+			glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)8));
+			glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12));
+
+			// Specify the indices.
+			glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
+			glCheck(glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0));
+
+			glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+			glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+		}
+		else if (vertices)
+		{
+			// Setup the pointers to the vertices' components
+			const char* data = reinterpret_cast<const char*>(vertices);
+			glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), data + 0));
+			glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
+			glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
+		}
 
         // Find the OpenGL primitive type
         static const GLenum modes[] = {GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
@@ -289,7 +341,9 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         GLenum mode = modes[type];
 
 #if defined(_DEBUG)
+        // There should always be a shader bound, since we fall back to a default shader.
         GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+        assert(currentShaderHandle != -1);
 #endif
 
         // Draw the primitives
@@ -302,10 +356,10 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
         // If the texture we used to draw belonged to a RenderTexture, then forcibly unbind that texture.
         // This prevents a bug where some drivers do not clear RenderTextures properly.
         if (states.texture && states.texture->m_fboAttachment)
-            applyTexture(NULL);
+            applyTexture(RenderStates());
 
         // Update the cache
-        m_cache.useVertexCache = useVertexCache;
+        s_cache.useVertexCache = useVertexCache;
     }
 }
 
@@ -316,6 +370,13 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     // Nothing to draw?
     if (!vertices || (vertexCount == 0))
         return;
+
+	// There must be a shader bound for this version to be used.
+	assert(states.shader != NULL);
+#if defined(_DEBUG)
+	GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+	assert(currentShaderHandle != 0);
+#endif
 
     // GL_QUADS is unavailable on OpenGL ES
 #ifdef SFML_OPENGL_ES
@@ -328,24 +389,24 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
 #endif
 
     // First set the persistent OpenGL states if it's the very first call
-    if (!m_cache.glStatesSet)
+    if (!s_cache.glStatesSet)
         resetGLStates();
 
     // Check if the vertex count is low enough so that we can pre-transform them
-    bool useVertexCache = (vertexCount <= StatesCache::VertexCacheSize);
+    bool useVertexCache = (vertexCount <= StatesCache::VertexCacheSize) && !states.useVBO;
     if (useVertexCache)
     {
         // Pre-transform the vertices and store them into the vertex cache
         for (std::size_t i = 0; i < vertexCount; ++i)
         {
-            Vertex& vertex = m_cache.vertexCache[i];
+            Vertex& vertex = s_cache.vertexCache[i];
             vertex.position = states.transform * vertices[i].position;
             vertex.color = vertices[i].color;
             vertex.texCoords = vertices[i].texCoords;
         }
 
         // Since vertices are transformed, we must use an identity transform to render them
-        if (!m_cache.useVertexCache)
+        if (!s_cache.useVertexCache)
             applyTransform(Transform::Identity);
     }
     else
@@ -354,46 +415,69 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     }
 
     // Apply the view
-    if (m_cache.viewChanged)
+    if (s_cache.viewChanged)
         applyCurrentView();
 
     // Apply the blend mode
-    if (states.blendMode != m_cache.lastBlendMode)
+    if (states.blendMode != s_cache.lastBlendMode)
         applyBlendMode(states.blendMode);
 
     // Apply the texture
     Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
-    if (textureId != m_cache.lastTextureId)
-        applyTexture(states.texture);
+    if (textureId != s_cache.lastTextureId || states.textureTransform)
+        applyTexture(states);
+
+	// Apply the color.
+	Color color = states.useColor ? states.color : Color::White;
+	// HACK: Always set the colour for now until we iron out all the bugs.
+	// This should only change the colour if it has changed, or if the shader has changed.
+	//if (color != s_cache.lastColor)
+	{
+		Glsl::Vec4 colorVec(color);
+		int colorLocation = states.shader->getColorLocation();
+		// HACK: We don't set this via the Shader class because we don't want to bind again.
+		glCheck(GLEXT_glUniform4f(colorLocation, colorVec.x, colorVec.y, colorVec.z, colorVec.w));
+		s_cache.lastColor = color;
+	}
 
     // If we pre-transform the vertices, we must use our internal vertex cache
     if (useVertexCache)
     {
         // ... and if we already used it previously, we don't need to set the pointers again
-        if (!m_cache.useVertexCache)
-            vertices = m_cache.vertexCache;
+        if (!s_cache.useVertexCache)
+            vertices = s_cache.vertexCache;
         else
             vertices = NULL;
     }
 
-    // Setup the pointers to the vertices' components
-    if (vertices)
-    {
-        const char* data = reinterpret_cast<const char*>(vertices);
-        glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), data + 0));
-        glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
-        glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
-    }
+	if (states.useVBO)
+	{
+		// Specify the vertices.
+		glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
+		glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), (void*)0));
+		glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)8));
+		glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12));
+
+		// Specify the indices.
+		glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
+		glCheck(glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0));
+
+		glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+		glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+	}
+	else if (vertices)
+	{
+		// Setup the pointers to the vertices' components
+		const char* data = reinterpret_cast<const char*>(vertices);
+		glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), data + 0));
+		glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
+		glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
+	}
 
     // Find the OpenGL primitive type
     static const GLenum modes[] = { GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES,
         GL_TRIANGLE_STRIP, GL_TRIANGLE_FAN, GL_QUADS };
     GLenum mode = modes[type];
-
-#if defined(_DEBUG)
-    GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
-    assert(currentShaderHandle != 0);
-#endif
 
     // Draw the primitives
     glCheck(glDrawArrays(mode, 0, vertexCount));
@@ -401,10 +485,10 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
     // If the texture we used to draw belonged to a RenderTexture, then forcibly unbind that texture.
     // This prevents a bug where some drivers do not clear RenderTextures properly.
     if (states.texture && states.texture->m_fboAttachment)
-        applyTexture(NULL);
+        applyTexture(RenderStates());
 
     // Update the cache
-    m_cache.useVertexCache = useVertexCache;
+    s_cache.useVertexCache = useVertexCache;
 }
 
 ////////////////////////////////////////////////////////////
@@ -487,16 +571,16 @@ void RenderTarget::resetGLStates()
         glCheck(glEnableClientState(GL_VERTEX_ARRAY));
         glCheck(glEnableClientState(GL_COLOR_ARRAY));
         glCheck(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
-        m_cache.glStatesSet = true;
+        s_cache.glStatesSet = true;
 
         // Apply the default SFML states
         applyBlendMode(BlendAlpha);
         applyTransform(Transform::Identity);
-        applyTexture(NULL);
+        applyTexture(RenderStates());
         if (shaderAvailable)
             applyShader(NULL);
 
-        m_cache.useVertexCache = false;
+        s_cache.useVertexCache = false;
 
         // Set the default view
         setView(getView());
@@ -512,7 +596,38 @@ void RenderTarget::initialize()
     m_view = m_defaultView;
 
     // Set GL states only on first draw, so that we don't pollute user's states
-    m_cache.glStatesSet = false;
+    s_cache.glStatesSet = false;
+
+	Vertex vertices[4];
+	vertices[0].position = Vector2f(0, 0);
+	vertices[1].position = Vector2f(0, 1.0f);
+	vertices[2].position = Vector2f(1.0f, 0);
+	vertices[3].position = Vector2f(1.0f, 1.0f);
+
+	vertices[0].texCoords = Vector2f(0.0f, 0.0f);
+	vertices[1].texCoords = Vector2f(0.0f, 1.0f);
+	vertices[2].texCoords = Vector2f(1.0f, 0.0f);
+	vertices[3].texCoords = Vector2f(1.0f, 1.0f);
+
+	vertices[0].color = Color::White;
+	vertices[1].color = Color::White;
+	vertices[2].color = Color::White;
+	vertices[3].color = Color::White;
+
+	Uint16 indices[4] = { 0, 1, 2, 3 };
+
+	// Vertices
+	glCheck(glGenBuffers(1, &m_spriteVertexVBO));
+	glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
+	glCheck(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0].position.x, GL_STATIC_DRAW));
+
+	// Indices
+	glCheck(glGenBuffers(1, &m_spriteIndexVBO));
+	glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
+	glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW));
+
+	glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 }
 
 
@@ -531,7 +646,7 @@ void RenderTarget::applyCurrentView()
     // Go back to model-view mode
     glCheck(glMatrixMode(GL_MODELVIEW));
 
-    m_cache.viewChanged = false;
+    s_cache.viewChanged = false;
 }
 
 
@@ -579,7 +694,7 @@ void RenderTarget::applyBlendMode(const BlendMode& mode)
         }
     }
 
-    m_cache.lastBlendMode = mode;
+    s_cache.lastBlendMode = mode;
 }
 
 
@@ -593,11 +708,13 @@ void RenderTarget::applyTransform(const Transform& transform)
 
 
 ////////////////////////////////////////////////////////////
-void RenderTarget::applyTexture(const Texture* texture)
+void RenderTarget::applyTexture(const RenderStates& states)
 {
-    Texture::bind(texture, Texture::Pixels);
+	const Texture* texture = states.texture;
+	const Transform* textureTransform = states.textureTransform;
+	Texture::bind(texture, Texture::Pixels, textureTransform);
 
-    m_cache.lastTextureId = texture ? texture->m_cacheId : 0;
+    s_cache.lastTextureId = texture ? texture->m_cacheId : 0;
 }
 
 

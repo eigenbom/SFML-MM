@@ -828,6 +828,34 @@ static int Load_ARB_geometry_shader4()
     return numFailed;
 }
 
+void (GL_FUNCPTR *sf_ptrc_glGenBuffers)(GLsizei, GLuint*) = NULL;
+void (GL_FUNCPTR *sf_ptrc_glDeleteBuffers)(GLsizei, GLuint*) = NULL;
+void (GL_FUNCPTR *sf_ptrc_glBindBuffer)(GLenum, GLuint) = NULL;
+void (GL_FUNCPTR *sf_ptrc_glBufferData)(GLenum, GLsizeiptr, const GLvoid*, GLenum) = NULL;
+
+static int Load_VBO_support()
+{
+	int numFailed = 0;
+
+	sf_ptrc_glGenBuffers = reinterpret_cast<void (GL_FUNCPTR *)(GLsizei, GLuint*)>(glLoaderGetProcAddress("glGenBuffers"));
+	if (!sf_ptrc_glGenBuffers)
+		numFailed++;
+
+	sf_ptrc_glDeleteBuffers = reinterpret_cast<void (GL_FUNCPTR *)(GLsizei, GLuint*)>(glLoaderGetProcAddress("glDeleteBuffers"));
+	if (!sf_ptrc_glDeleteBuffers)
+		numFailed++;
+
+	sf_ptrc_glBindBuffer = reinterpret_cast<void (GL_FUNCPTR *)(GLenum, GLuint)>(glLoaderGetProcAddress("glBindBuffer"));
+	if (!sf_ptrc_glBindBuffer)
+		numFailed++;
+
+	sf_ptrc_glBufferData = reinterpret_cast<void (GL_FUNCPTR *)(GLenum, GLsizeiptr, const GLvoid*, GLenum)>(glLoaderGetProcAddress("glBufferData"));
+	if (!sf_ptrc_glBufferData)
+		numFailed++;
+
+	return numFailed;
+}
+
 typedef int (*PFN_LOADFUNCPOINTERS)();
 typedef struct sfogl_StrToExtMap_s
 {
@@ -899,4 +927,6 @@ void sfogl_LoadFunctions()
         if (sf::Context::isExtensionAvailable(ExtensionMap[i].extensionName))
             LoadExtension(ExtensionMap[i]);
     }
+
+	Load_VBO_support();
 }

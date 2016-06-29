@@ -740,9 +740,25 @@ public:
     /// \return Location ID of the uniform, or -1 if not found
     ///
     ////////////////////////////////////////////////////////////
-    int getUniformLocation(const std::string& name);
+    int getUniformLocation(const std::string& name, bool warnIfMissing = true);
+
+	int getColorLocation() const;
+
+    enum DefaultShaderType
+    {
+        Textured,
+        Untextured
+    };
+
+    static void setDefaultShader(DefaultShaderType type, Shader* shader);
+    static Shader* getDefaultShader(DefaultShaderType type);
+    static int getDefaultShaderTextureUniformLocation();
 
 private:
+
+    static Shader* s_defaultShader;
+    static Shader* s_defaultShaderUntextured;
+    static int s_defaultShaderTextureUniformLocation;
 
     ////////////////////////////////////////////////////////////
     /// \brief Compile the shader(s) and create the program
@@ -791,7 +807,23 @@ private:
     TextureTable m_textures;       ///< Texture variables in the shader, mapped to their location
     UniformTable m_uniforms;       ///< Parameters location cache
     bool         m_alwaysBind;
+    int          m_colorLocation;  // HACK
 };
+
+inline int Shader::getColorLocation() const
+{
+    return m_colorLocation;
+}
+
+inline Shader* Shader::getDefaultShader(Shader::DefaultShaderType type)
+{
+    return type == Shader::Textured ? s_defaultShader : s_defaultShaderUntextured;
+}
+
+inline int Shader::getDefaultShaderTextureUniformLocation()
+{
+    return s_defaultShaderTextureUniformLocation;
+}
 
 inline void Shader::setBindAlways(bool always)
 {
