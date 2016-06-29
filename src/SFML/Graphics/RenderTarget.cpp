@@ -317,20 +317,28 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 		assert(currentShaderHandle != -1);
 #endif
 
-		if (states.useVBO)
+		if (s_cache.lastUsedVBO && !states.useVBO)
 		{
-			// Specify the vertices.
-			glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
-			glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), (void*)0));
-			glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)8));
-			glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12));
-
-			// Specify the indices.
-			glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
-			glCheck(glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0));
-
+			// No longer using a VBO so make sure there's nothing bound.
 			glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
 			glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+		}
+
+		if (states.useVBO)
+		{
+			if (!s_cache.lastUsedVBO)
+			{
+				// Specify the vertices.
+				glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
+				glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), (void*)0));
+				glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)8));
+				glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12));
+
+				// Specify the indices.
+				glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
+			}
+
+			glCheck(glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0));
 		}
 		else if (vertices)
 		{
@@ -340,6 +348,8 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 			glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
 			glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
 		}
+
+		s_cache.lastUsedVBO = states.useVBO;
 
 		if (!states.useVBO)
 		{
@@ -453,20 +463,28 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
             vertices = NULL;
     }
 
-	if (states.useVBO)
+	if (s_cache.lastUsedVBO && !states.useVBO)
 	{
-		// Specify the vertices.
-		glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
-		glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), (void*)0));
-		glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)8));
-		glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12));
-
-		// Specify the indices.
-		glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
-		glCheck(glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0));
-
+		// No longer using a VBO so make sure there's nothing bound.
 		glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
 		glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+	}
+
+	if (states.useVBO)
+	{
+		if (!s_cache.lastUsedVBO)
+		{
+			// Specify the vertices.
+			glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_spriteVertexVBO));
+			glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), (void*)0));
+			glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)8));
+			glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12));
+
+			// Specify the indices.
+			glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_spriteIndexVBO));
+		}
+
+		glCheck(glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0));
 	}
 	else if (vertices)
 	{
@@ -476,6 +494,8 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
 		glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), data + 8));
 		glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
 	}
+
+	s_cache.lastUsedVBO = states.useVBO;
 
 	if (!states.useVBO)
 	{
@@ -586,7 +606,12 @@ void RenderTarget::resetGLStates()
         if (shaderAvailable)
             applyShader(NULL);
 
+		// Make sure no VBO is bound by default.
+		glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+		glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
         s_cache.useVertexCache = false;
+		s_cache.lastUsedVBO = false;
 
         // Set the default view
         setView(getView());

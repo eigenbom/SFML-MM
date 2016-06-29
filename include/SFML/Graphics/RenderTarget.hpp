@@ -423,6 +423,7 @@ private:
         Uint64    lastTextureId;  ///< Cached texture
 		Color     lastColor;
         bool      useVertexCache; ///< Did we previously use the vertex cache?
+		bool      lastUsedVBO;
         Vertex    vertexCache[VertexCacheSize]; ///< Pre-transformed vertices cache
     };
 
