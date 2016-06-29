@@ -1261,6 +1261,8 @@ extern void (GL_FUNCPTR *sf_ptrc_glProgramParameteriARB)(GLuint, GLenum, GLint);
 
 extern void (GL_FUNCPTR *sf_ptrc_glGenBuffers)(GLsizei, GLuint*);
 #define glGenBuffers sf_ptrc_glGenBuffers
+extern void (GL_FUNCPTR *sf_ptrc_glDeleteBuffers)(GLsizei, GLuint*);
+#define glDeleteBuffers sf_ptrc_glDeleteBuffers
 extern void (GL_FUNCPTR *sf_ptrc_glBindBuffer)(GLenum, GLuint);
 #define glBindBuffer sf_ptrc_glBindBuffer
 extern void (GL_FUNCPTR *sf_ptrc_glBufferData)(GLenum, GLsizeiptr, const GLvoid*, GLenum);

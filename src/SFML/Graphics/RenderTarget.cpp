@@ -100,6 +100,8 @@ m_view       ()
 ////////////////////////////////////////////////////////////
 RenderTarget::~RenderTarget()
 {
+	glCheck(glDeleteBuffers(1, &m_spriteIndexVBO));
+	glCheck(glDeleteBuffers(1, &m_spriteVertexVBO));
 }
 
 

@@ -829,6 +829,7 @@ static int Load_ARB_geometry_shader4()
 }
 
 void (GL_FUNCPTR *sf_ptrc_glGenBuffers)(GLsizei, GLuint*) = NULL;
+void (GL_FUNCPTR *sf_ptrc_glDeleteBuffers)(GLsizei, GLuint*) = NULL;
 void (GL_FUNCPTR *sf_ptrc_glBindBuffer)(GLenum, GLuint) = NULL;
 void (GL_FUNCPTR *sf_ptrc_glBufferData)(GLenum, GLsizeiptr, const GLvoid*, GLenum) = NULL;
 
@@ -838,6 +839,10 @@ static int Load_VBO_support()
 
 	sf_ptrc_glGenBuffers = reinterpret_cast<void (GL_FUNCPTR *)(GLsizei, GLuint*)>(glLoaderGetProcAddress("glGenBuffers"));
 	if (!sf_ptrc_glGenBuffers)
+		numFailed++;
+
+	sf_ptrc_glDeleteBuffers = reinterpret_cast<void (GL_FUNCPTR *)(GLsizei, GLuint*)>(glLoaderGetProcAddress("glDeleteBuffers"));
+	if (!sf_ptrc_glDeleteBuffers)
 		numFailed++;
 
 	sf_ptrc_glBindBuffer = reinterpret_cast<void (GL_FUNCPTR *)(GLenum, GLuint)>(glLoaderGetProcAddress("glBindBuffer"));
