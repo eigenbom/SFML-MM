@@ -311,7 +311,7 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
                 vertices = NULL;
         }
 
-#if defined(_DEBUG)
+#if defined(SFML_DEBUG)
 		// There should always be a shader bound, since we fall back to a default shader.
 		GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
 		assert(currentShaderHandle != -1);
@@ -386,7 +386,7 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
 
 	// There must be a shader bound for this version to be used.
 	assert(states.shader != NULL);
-#if defined(_DEBUG)
+#if defined(SFML_DEBUG)
 	GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
 	assert(currentShaderHandle != 0);
 #endif

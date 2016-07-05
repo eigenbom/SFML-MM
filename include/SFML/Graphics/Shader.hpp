@@ -728,7 +728,7 @@ public:
     ////////////////////////////////////////////////////////////
     static bool isGeometryAvailable();
 
-#if defined(_DEBUG)
+#if defined(SFML_DEBUG)
     static void setAssertOnBind(bool enable);
 #endif
 

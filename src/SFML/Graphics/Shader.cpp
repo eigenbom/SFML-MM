@@ -856,7 +856,7 @@ unsigned int Shader::getNativeHandle() const
     return m_shaderProgram;
 }
 
-#if defined(_DEBUG)
+#if defined(SFML_DEBUG)
 static bool s_assertOnBind = false;
 void Shader::setAssertOnBind(bool enable)
 {
@@ -867,7 +867,7 @@ void Shader::setAssertOnBind(bool enable)
 ////////////////////////////////////////////////////////////
 void Shader::bind(const Shader* shader)
 {
-#if defined(_DEBUG)
+#if defined(SFML_DEBUG)
     if (s_assertOnBind)
 #if defined(SFML_SYSTEM_WINDOWS)
         DebugBreak();
