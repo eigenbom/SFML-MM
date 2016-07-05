@@ -129,6 +129,20 @@ public:
     void resize(std::size_t vertexCount);
 
     ////////////////////////////////////////////////////////////
+    /// \brief Preallocate the vertex array
+    ///
+    /// If \a vertexCount is greater than the current size,  the function
+    /// causes the container to reallocate its storage increasing its
+    /// capacity to n (or greater).
+    /// In all other cases, the function call does not cause a reallocation
+    /// and the vector capacity is not affected.
+    ///
+    /// \param vertexCount Minimum capacity for the vector
+    ///
+    ////////////////////////////////////////////////////////////
+    void reserve(std::size_t vertexCount);
+
+    ////////////////////////////////////////////////////////////
     /// \brief Add a vertex to the array
     ///
     /// \param vertex Vertex to add

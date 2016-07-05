@@ -81,6 +81,11 @@ void VertexArray::resize(std::size_t vertexCount)
     m_vertices.resize(vertexCount);
 }
 
+////////////////////////////////////////////////////////////
+void VertexArray::reserve(std::size_t vertexCount)
+{
+    m_vertices.reserve(vertexCount);
+}
 
 ////////////////////////////////////////////////////////////
 void VertexArray::append(const Vertex& vertex)
