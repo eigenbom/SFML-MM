@@ -314,7 +314,11 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 #if defined(SFML_DEBUG)
 		// There should always be a shader bound, since we fall back to a default shader.
 		GLhandleARB currentShaderHandle = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+      #if defined(SFML_SYSTEM_MACOS)
+      assert(currentShaderHandle != (void*)-1);
+      #else
 		assert(currentShaderHandle != -1);
+      #endif
 #endif
 
 		if (s_cache.lastUsedVBO && !states.useVBO)
