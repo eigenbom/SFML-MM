@@ -352,6 +352,8 @@ public:
     ////////////////////////////////////////////////////////////
     virtual bool activate(bool active) = 0;
 
+	static void setLastProgram(unsigned int program, bool boundTextures);
+
 protected:
 
     ////////////////////////////////////////////////////////////
@@ -421,6 +423,8 @@ private:
         bool      viewChanged;    ///< Has the current view changed since last draw?
         BlendMode lastBlendMode;  ///< Cached blending mode
         Uint64    lastTextureId;  ///< Cached texture
+		unsigned int lastProgram; ///< Last shader program used
+		bool      lastProgramBoundTextures; ///< If we bound textures when we bound the last shader
 		Color     lastColor;
         bool      useVertexCache; ///< Did we previously use the vertex cache?
 		bool      lastUsedVBO;

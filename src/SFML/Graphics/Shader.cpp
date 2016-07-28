@@ -31,6 +31,7 @@
 #include <SFML/Graphics/Transform.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/GLCheck.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Context.hpp>
 #include <SFML/System/InputStream.hpp>
 #include <SFML/System/Mutex.hpp>
@@ -897,11 +898,14 @@ void Shader::bind(const Shader* shader)
         // Bind the current texture
         if (shader->m_currentTexture != -1)
             glCheck(GLEXT_glUniform1i(shader->m_currentTexture, 0));
+
+		RenderTarget::setLastProgram(shader->m_shaderProgram, true);
     }
     else
     {
         // Bind no shader
         glCheck(GLEXT_glUseProgramObject(0));
+		RenderTarget::setLastProgram(0, false);
     }
 }
 
@@ -921,11 +925,13 @@ void Shader::bindProgram(const Shader* shader)
     {
         // Enable the program
         glCheck(GLEXT_glUseProgramObject(castToGlHandle(shader->m_shaderProgram)));
+		RenderTarget::setLastProgram(shader->m_shaderProgram, false);
     }
     else
     {
         // Bind no shader
         glCheck(GLEXT_glUseProgramObject(0));
+		RenderTarget::setLastProgram(0, false);
     }
 }
 

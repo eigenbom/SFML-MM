@@ -285,8 +285,10 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 		if (textureId != s_cache.lastTextureId || states.textureTransform != NULL)
 			applyTexture(states);
 
-        // FIXME: Only bind shader when it changes.
-        applyShader(shader);
+        unsigned int program = shader->getNativeHandle();
+		// If the shader has changed, or it hasn't but the last time we didn't bind textures, then we need to setup the shader again.
+		if (program != s_cache.lastProgram || !s_cache.lastProgramBoundTextures)
+			applyShader(shader);
 
         // Apply the color.
 		Color color = states.useColor ? states.color : Color::White;
@@ -365,10 +367,6 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 			// Draw the primitives
 			glCheck(glDrawArrays(mode, 0, vertexCount));
 		}
-
-        // Unbind the shader, if any
-        if (states.shader)
-            applyShader(NULL);
 
         // If the texture we used to draw belonged to a RenderTexture, then forcibly unbind that texture.
         // This prevents a bug where some drivers do not clear RenderTextures properly.
@@ -753,10 +751,18 @@ void RenderTarget::applyTexture(const RenderStates& states)
 }
 
 
+void RenderTarget::setLastProgram(unsigned int program, bool boundTextures)
+{
+	s_cache.lastProgram = program;
+	s_cache.lastProgramBoundTextures = boundTextures;
+}
+
 ////////////////////////////////////////////////////////////
 void RenderTarget::applyShader(const Shader* shader)
 {
     Shader::bind(shader);
+	s_cache.lastProgram = shader ? shader->getNativeHandle() : 0;
+	s_cache.lastProgramBoundTextures = shader != NULL;
 }
 
 } // namespace sf
