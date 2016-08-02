@@ -285,16 +285,19 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 		if (textureId != s_cache.lastTextureId || states.textureTransform != NULL)
 			applyTexture(states);
 
+        bool setColour = false;
         unsigned int program = shader->getNativeHandle();
+
 		// If the shader has changed, or it hasn't but the last time we didn't bind textures, then we need to setup the shader again.
 		if (program != s_cache.lastProgram || !s_cache.lastProgramBoundTextures)
+        {
+            setColour = true;
 			applyShader(shader);
+        }
 
         // Apply the color.
 		Color color = states.useColor ? states.color : Color::White;
-        // HACK: Always set the colour for now until we iron out all the bugs.
-        // This should only change the colour if it has changed, or if the shader has changed.
-        //if (color != s_cache.lastColor)
+        if (color != s_cache.lastColor || setColour)
         {
             Glsl::Vec4 colorVec(color);
 			int colorLocation = shader->getColorLocation();
