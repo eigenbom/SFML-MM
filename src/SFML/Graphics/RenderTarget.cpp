@@ -574,7 +574,7 @@ void RenderTarget::popGLStates()
 
 
 ////////////////////////////////////////////////////////////
-void RenderTarget::resetGLStates()
+void RenderTarget::resetGLStates(bool applyOnly /*= false*/)
 {
     // Check here to make sure a context change does not happen after activate(true)
     bool shaderAvailable = Shader::isAvailable();
@@ -584,25 +584,28 @@ void RenderTarget::resetGLStates()
         // Make sure that extensions are initialized
         priv::ensureExtensionsInit();
 
-        // Make sure that the texture unit which is active is the number 0
-        if (GLEXT_multitexture)
-        {
-            glCheck(GLEXT_glClientActiveTexture(GLEXT_GL_TEXTURE0));
-            glCheck(GLEXT_glActiveTexture(GLEXT_GL_TEXTURE0));
-        }
+		if (!applyOnly)
+		{
+			// Make sure that the texture unit which is active is the number 0
+			if (GLEXT_multitexture)
+			{
+				glCheck(GLEXT_glClientActiveTexture(GLEXT_GL_TEXTURE0));
+				glCheck(GLEXT_glActiveTexture(GLEXT_GL_TEXTURE0));
+			}
 
-        // Define the default OpenGL states
-        glCheck(glDisable(GL_CULL_FACE));
-        glCheck(glDisable(GL_LIGHTING));
-        glCheck(glDisable(GL_DEPTH_TEST));
-        glCheck(glDisable(GL_ALPHA_TEST));
-        glCheck(glEnable(GL_TEXTURE_2D));
-        glCheck(glEnable(GL_BLEND));
-        glCheck(glMatrixMode(GL_MODELVIEW));
-        glCheck(glEnableClientState(GL_VERTEX_ARRAY));
-        glCheck(glEnableClientState(GL_COLOR_ARRAY));
-        glCheck(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
-        s_cache.glStatesSet = true;
+			// Define the default OpenGL states
+			glCheck(glDisable(GL_CULL_FACE));
+			glCheck(glDisable(GL_LIGHTING));
+			glCheck(glDisable(GL_DEPTH_TEST));
+			glCheck(glDisable(GL_ALPHA_TEST));
+			glCheck(glEnable(GL_TEXTURE_2D));
+			glCheck(glEnable(GL_BLEND));
+			glCheck(glMatrixMode(GL_MODELVIEW));
+			glCheck(glEnableClientState(GL_VERTEX_ARRAY));
+			glCheck(glEnableClientState(GL_COLOR_ARRAY));
+			glCheck(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
+			s_cache.glStatesSet = true;
+		}
 
         // Apply the default SFML states
         applyBlendMode(BlendAlpha);
@@ -611,15 +614,18 @@ void RenderTarget::resetGLStates()
         if (shaderAvailable)
             applyShader(NULL);
 
-		// Make sure no VBO is bound by default.
-		glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
-		glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+		if (!applyOnly)
+		{
+			// Make sure no VBO is bound by default.
+			glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+			glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 
-        s_cache.useVertexCache = false;
-		s_cache.lastUsedVBO = false;
+			s_cache.useVertexCache = false;
+			s_cache.lastUsedVBO = false;
 
-        // Set the default view
-        setView(getView());
+			// Set the default view
+			setView(getView());
+		}
     }
 }
 

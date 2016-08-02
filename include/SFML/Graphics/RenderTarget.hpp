@@ -336,7 +336,7 @@ public:
     /// \endcode
     ///
     ////////////////////////////////////////////////////////////
-    void resetGLStates();
+    void resetGLStates(bool applyOnly = false);
 
     ////////////////////////////////////////////////////////////
     /// \brief Activate the target for rendering
