@@ -190,6 +190,10 @@ void WindowImplCocoa::setUpProcess(void)
         if (![[SFApplication sharedApplication] delegate])
             [[NSApplication sharedApplication] setDelegate:[[SFApplicationDelegate alloc] init]];
 
+        NSMenu* mainMenu = [NSApp mainMenu];
+        if (mainMenu != nil)
+            return;
+
         // Create menus for the application (before finishing launching!)
         [SFApplication setUpMenuBar];
 
