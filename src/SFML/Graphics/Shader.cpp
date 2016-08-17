@@ -794,6 +794,20 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec3* vectorAr
         glCheck(GLEXT_glUniform3fv(binder.location, length, &contiguous[0]));
 }
 
+////////////////////////////////////////////////////////////
+void Shader::setUniformArray(int location, const Glsl::Vec3* vectorArray, std::size_t length)
+{
+#if defined(SFML_SYSTEM_LINUX)
+    #define STATIC_ASSERT(cond) typedef char static_assert[(cond) ? 1 : -1]
+    STATIC_ASSERT(sizeof(Glsl::Vec3) == 3 * 4);
+#else
+    static_assert(sizeof(Glsl::Vec3) == 3 * 4, "Vec3 is not 12 bytes");
+#endif
+    UniformBinder binder(*this, location);
+    assert(vectorArray);
+    if (location != -1)
+        glCheck(GLEXT_glUniform3fv(location, length, &vectorArray->x));
+}
 
 ////////////////////////////////////////////////////////////
 void Shader::setUniformArray(const std::string& name, const Glsl::Vec4* vectorArray, std::size_t length)
