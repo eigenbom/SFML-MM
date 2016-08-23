@@ -48,6 +48,8 @@ set(SRC
     ${INCROOT}/View.hpp
     ${SRCROOT}/Vertex.cpp
     ${INCROOT}/Vertex.hpp
+    ${SRCROOT}/DefaultShaders.hpp
+    ${SRCROOT}/DefaultShaders.cpp
 )
 if(NOT SFML_OPENGL_ES)
     list(APPEND SRC ${SRCROOT}/GLLoader.cpp)

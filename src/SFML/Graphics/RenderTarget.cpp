@@ -31,6 +31,7 @@
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/Graphics/GLCheck.hpp>
+#include <SFML/Graphics/DefaultShaders.hpp>
 #include <SFML/System/Err.hpp>
 #include <cassert>
 #include <iostream>
@@ -94,6 +95,7 @@ m_defaultView(),
 m_view       ()
 {
     s_cache.glStatesSet = false;
+	InitDefaultShaders();
 }
 
 
@@ -102,6 +104,7 @@ RenderTarget::~RenderTarget()
 {
 	glCheck(glDeleteBuffers(1, &m_spriteIndexVBO));
 	glCheck(glDeleteBuffers(1, &m_spriteVertexVBO));
+	DeinitDefaultShaders();
 }
 
 
