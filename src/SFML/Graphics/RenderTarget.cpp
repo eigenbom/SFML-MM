@@ -95,7 +95,6 @@ m_defaultView(),
 m_view       ()
 {
     s_cache.glStatesSet = false;
-	InitDefaultShaders();
 }
 
 
@@ -104,7 +103,6 @@ RenderTarget::~RenderTarget()
 {
 	glCheck(glDeleteBuffers(1, &m_spriteIndexVBO));
 	glCheck(glDeleteBuffers(1, &m_spriteVertexVBO));
-	DeinitDefaultShaders();
 }
 
 

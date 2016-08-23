@@ -4,14 +4,14 @@
 namespace sf
 {
 
-const char* DefaultFragmentShaderUntextured =
+static const char* DefaultFragmentShaderUntextured =
 "#version 120"
 "void main(void)"
 "{"
 "	gl_FragColor = gl_Color;"
 "}";
 
-const char* DefaultVertexShaderUntextured =
+static const char* DefaultVertexShaderUntextured =
 "#version 120"
 "uniform vec4 u_colour;"
 "void main(void)"
@@ -20,7 +20,7 @@ const char* DefaultVertexShaderUntextured =
 "	gl_FrontColor = gl_Color * u_colour;"
 "}";
 
-const char* DefaultFragmentShaderTextured =
+static const char* DefaultFragmentShaderTextured =
 "#version 120"
 "uniform sampler2D u_tex;"
 "void main(void)"
@@ -29,7 +29,7 @@ const char* DefaultFragmentShaderTextured =
 "	gl_FragColor = gl_Color * colour;"
 "}";
 
-const char* DefaultVertexShaderTextured =
+static const char* DefaultVertexShaderTextured =
 "#version 120"
 "uniform vec4 u_colour;"
 "void main(void)"
@@ -43,7 +43,7 @@ static bool s_initialised = false;
 static sf::Shader* s_defaultShaderTextured;
 static sf::Shader* s_defaultShaderUntextured;
 
-void InitDefaultShaders()
+void DefaultShaders::init()
 {
 	if (s_initialised)
 		return;
@@ -57,7 +57,7 @@ void InitDefaultShaders()
 	sf::Shader::setDefaultShader(sf::Shader::Textured, s_defaultShaderTextured);
 }
 
-void DeinitDefaultShaders()
+void DefaultShaders::deinit()
 {
 	if (!s_initialised)
 		return;
