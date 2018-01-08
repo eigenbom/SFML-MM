@@ -150,9 +150,10 @@ if(SFML_COMPILER_MSVC)
 endif()
 
 # Enable exception handling mode in Visual C++
-# Enable /fp:fast
+# Note: /fp:fast breaks sfml so I've disabled for now
 if(SFML_COMPILER_MSVC)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /fp:fast")
+    # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /fp:fast")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 endif()
 
 
