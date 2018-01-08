@@ -149,6 +149,13 @@ if(SFML_COMPILER_MSVC)
     add_definitions(-D_CRT_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
 endif()
 
+# Enable exception handling mode in Visual C++
+# Enable /fp:fast
+if(SFML_COMPILER_MSVC)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /fp:fast")
+endif()
+
+
 # define SFML_OPENGL_ES if needed
 if(SFML_OPENGL_ES)
     add_definitions(-DSFML_OPENGL_ES)
