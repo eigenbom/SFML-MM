@@ -283,7 +283,11 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 
 		// Apply the texture
 		Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
-		if (textureId != s_cache.lastTextureId || states.textureTransform != NULL)
+
+		static const float emptyTextureMatrix[16] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+		const float* textureMatrix = (states.textureTransform == nullptr) ? emptyTextureMatrix : states.textureTransform->getMatrix();
+		const bool sameTextureTransform = textureId == s_cache.lastTextureId && std::equal(s_cache.lastTextureMatrix, s_cache.lastTextureMatrix + 16, textureMatrix);
+		if (textureId != s_cache.lastTextureId || !sameTextureTransform) // states.textureTransform != NULL)
 			applyTexture(states);
 
         bool setColour = false;
@@ -443,7 +447,10 @@ void RenderTarget::drawAdvanced(const Vertex* vertices, std::size_t vertexCount,
 
     // Apply the texture
     Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
-    if (textureId != s_cache.lastTextureId || states.textureTransform)
+	static const float emptyTextureMatrix[16] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+	const float* textureMatrix = (states.textureTransform == nullptr) ? emptyTextureMatrix : states.textureTransform->getMatrix();
+	const bool sameTextureTransform = textureId == s_cache.lastTextureId && std::equal(s_cache.lastTextureMatrix, s_cache.lastTextureMatrix + 16, textureMatrix);
+	if (textureId != s_cache.lastTextureId || !sameTextureTransform) // states.textureTransform != NULL)
         applyTexture(states);
 
 	// Apply the color.
@@ -758,6 +765,8 @@ void RenderTarget::applyTexture(const RenderStates& states)
 	Texture::bind(texture, Texture::Pixels, textureTransform);
 
     s_cache.lastTextureId = texture ? texture->m_cacheId : 0;
+	if (textureTransform) std::copy(textureTransform->getMatrix(), textureTransform->getMatrix() + 16, s_cache.lastTextureMatrix);
+	else std::fill(s_cache.lastTextureMatrix, s_cache.lastTextureMatrix + 16, 0.0f);
 }
 
 

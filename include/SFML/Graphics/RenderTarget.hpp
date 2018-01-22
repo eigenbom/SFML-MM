@@ -423,6 +423,7 @@ private:
         bool      viewChanged;    ///< Has the current view changed since last draw?
         BlendMode lastBlendMode;  ///< Cached blending mode
         Uint64    lastTextureId;  ///< Cached texture
+		float	  lastTextureMatrix[16]; ///< Texture transform at time of texture cache
 		unsigned int lastProgram; ///< Last shader program used
 		bool      lastProgramBoundTextures; ///< If we bound textures when we bound the last shader
 		Color     lastColor;
