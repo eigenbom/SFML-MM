@@ -127,7 +127,7 @@ Texture::~Texture()
 
 
 ////////////////////////////////////////////////////////////
-bool Texture::create(unsigned int width, unsigned int height)
+bool Texture::create(unsigned int width, unsigned int height, Texture::TextureFormat preferredFormat)
 {
     // Check if texture parameters are valid before creating it
     if ((width == 0) || (height == 0))
@@ -189,7 +189,7 @@ bool Texture::create(unsigned int width, unsigned int height)
         }
     }
 
-    static bool textureSrgb = GLEXT_texture_sRGB;
+    static bool textureSrgb = (bool) GLEXT_texture_sRGB;
 
     if (m_sRgb && !textureSrgb)
     {
@@ -210,9 +210,22 @@ bool Texture::create(unsigned int width, unsigned int height)
         m_sRgb = false;
     }
 
+    GLint internalFormat = 0;
+    switch (preferredFormat){
+        default:
+        case TextureFormat::Default: {
+            internalFormat = (m_sRgb ? GLEXT_GL_SRGB8_ALPHA8 :GL_RGBA);
+            break;
+        }
+        case TextureFormat::RGB5_A1: {
+            internalFormat = GL_RGB5_A1;
+            break;
+        }
+    }
+
     // Initialize the texture
     glCheck(glBindTexture(GL_TEXTURE_2D, m_texture));
-    glCheck(glTexImage2D(GL_TEXTURE_2D, 0, (m_sRgb ? GLEXT_GL_SRGB8_ALPHA8 : GL_RGBA), m_actualSize.x, m_actualSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+    glCheck(glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_actualSize.x, m_actualSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, m_isRepeated ? GL_REPEAT : (textureEdgeClamp ? GLEXT_GL_CLAMP_TO_EDGE : GLEXT_GL_CLAMP)));
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, m_isRepeated ? GL_REPEAT : (textureEdgeClamp ? GLEXT_GL_CLAMP_TO_EDGE : GLEXT_GL_CLAMP)));
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_isSmooth ? GL_LINEAR : GL_NEAREST));

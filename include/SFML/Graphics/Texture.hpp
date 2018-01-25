@@ -33,7 +33,6 @@
 #include <SFML/Window/GlResource.hpp>
 #include <SFML/Graphics/Transform.hpp>
 
-
 namespace sf
 {
 class Window;
@@ -57,6 +56,11 @@ public:
     {
         Normalized, ///< Texture coordinates in range [0 .. 1]
         Pixels      ///< Texture coordinates in range [0 .. size]
+    };
+
+    enum TextureFormat {
+        Default,
+        RGB5_A1
     };
 
 public:
@@ -94,7 +98,7 @@ public:
     /// \return True if creation was successful
     ///
     ////////////////////////////////////////////////////////////
-    bool create(unsigned int width, unsigned int height);
+    bool create(unsigned int width, unsigned int height, TextureFormat preferredFormat = TextureFormat::Default);
 
     ////////////////////////////////////////////////////////////
     /// \brief Load the texture from a file on disk
