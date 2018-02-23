@@ -877,6 +877,11 @@ void Shader::setAssertOnBind(bool enable)
 {
     s_assertOnBind = enable;
 }
+
+bool Shader::assertOnBind() {
+    return s_assertOnBind;
+}
+
 #endif
 
 ////////////////////////////////////////////////////////////

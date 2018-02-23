@@ -731,6 +731,7 @@ public:
 
 #if defined(SFML_DEBUG)
     static void setAssertOnBind(bool enable);
+    static bool assertOnBind();
 #endif
 
     ////////////////////////////////////////////////////////////
