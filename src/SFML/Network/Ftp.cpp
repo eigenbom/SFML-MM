@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2015 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2018 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -322,7 +322,7 @@ Ftp::Response Ftp::download(const std::string& remoteFile, const std::string& lo
 
 
 ////////////////////////////////////////////////////////////
-Ftp::Response Ftp::upload(const std::string& localFile, const std::string& remotePath, TransferMode mode)
+Ftp::Response Ftp::upload(const std::string& localFile, const std::string& remotePath, TransferMode mode, bool append)
 {
     // Get the contents of the file to send
     std::ifstream file(localFile.c_str(), std::ios_base::binary);
@@ -346,7 +346,7 @@ Ftp::Response Ftp::upload(const std::string& localFile, const std::string& remot
     if (response.isOk())
     {
         // Tell the server to start the transfer
-        response = sendCommand("STOR", path + filename);
+        response = sendCommand(append ? "APPE" : "STOR", path + filename);
         if (response.isOk())
         {
             // Send the file data
@@ -395,8 +395,18 @@ Ftp::Response Ftp::getResponse()
         // Receive the response from the server
         char buffer[1024];
         std::size_t length;
-        if (m_commandSocket.receive(buffer, sizeof(buffer), length) != Socket::Done)
-            return Response(Response::ConnectionClosed);
+
+        if (m_receiveBuffer.empty())
+        {
+            if (m_commandSocket.receive(buffer, sizeof(buffer), length) != Socket::Done)
+                return Response(Response::ConnectionClosed);
+        }
+        else
+        {
+            std::copy(m_receiveBuffer.begin(), m_receiveBuffer.end(), buffer);
+            length = m_receiveBuffer.size();
+            m_receiveBuffer.clear();
+        }
 
         // There can be several lines inside the received buffer, extract them all
         std::istringstream in(std::string(buffer, length), std::ios_base::binary);
@@ -451,6 +461,9 @@ Ftp::Response Ftp::getResponse()
                         {
                             message = separator + line;
                         }
+
+                        // Save the remaining data for the next time getResponse() is called
+                        m_receiveBuffer.assign(buffer + static_cast<std::size_t>(in.tellg()), length - static_cast<std::size_t>(in.tellg()));
 
                         // Return the response code and message
                         return Response(static_cast<Response::Status>(code), message);
@@ -618,7 +631,7 @@ void Ftp::DataChannel::send(std::istream& stream)
             break;
         }
 
-        count = stream.gcount();
+        count = static_cast<std::size_t>(stream.gcount());
 
         if (count > 0)
         {

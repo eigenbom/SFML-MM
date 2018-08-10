@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2015 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2018 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -118,6 +118,20 @@
 -(BOOL)isMouseInside
 {
     return [m_oglView isMouseInside];
+}
+
+
+////////////////////////////////////////////////////////
+-(void)setCursorGrabbed:(BOOL)grabbed
+{
+    [m_oglView setCursorGrabbed:grabbed];
+}
+
+
+////////////////////////////////////////////////////////
+-(void)setCursor:(NSCursor*)cursor
+{
+    return [m_oglView setCursor:cursor];
 }
 
 
@@ -240,7 +254,7 @@
     if ([NSThread currentThread] != [NSThread mainThread])
     {
         /*
-         * See http://lists.apple.com/archives/cocoa-dev/2011/Feb/msg00460.html
+         * See https://lists.apple.com/archives/cocoa-dev/2011/Feb/msg00460.html
          * for more information.
          */
         sf::err() << "Cannot fetch event from a worker thread. (OS X restriction)" << std::endl;

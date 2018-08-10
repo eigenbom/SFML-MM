@@ -39,24 +39,20 @@ set(CODECS_SRC
     ${INCROOT}/SoundFileFactory.hpp
     ${INCROOT}/SoundFileFactory.inl
     ${INCROOT}/SoundFileReader.hpp
+    ${SRCROOT}/SoundFileReaderFlac.hpp
+    ${SRCROOT}/SoundFileReaderFlac.cpp
     ${SRCROOT}/SoundFileReaderOgg.hpp
     ${SRCROOT}/SoundFileReaderOgg.cpp
     ${SRCROOT}/SoundFileReaderWav.hpp
     ${SRCROOT}/SoundFileReaderWav.cpp
     ${INCROOT}/SoundFileWriter.hpp
+    ${SRCROOT}/SoundFileWriterFlac.hpp
+    ${SRCROOT}/SoundFileWriterFlac.cpp
+    ${SRCROOT}/SoundFileWriterOgg.hpp
+    ${SRCROOT}/SoundFileWriterOgg.cpp
     ${SRCROOT}/SoundFileWriterWav.hpp
     ${SRCROOT}/SoundFileWriterWav.cpp
 )
-if(SFML_ENABLE_VORBIS_ENCODING)
-    list(APPEND CODECS_SRC ${SRCROOT}/SoundFileWriterOgg.cpp)
-    list(APPEND CODECS_SRC ${SRCROOT}/SoundFileWriterOgg.hpp)
-endif()
-if(SFML_ENABLE_FLAC)
-    list(APPEND CODECS_SRC ${SRCROOT}/SoundFileReaderFlac.cpp)
-    list(APPEND CODECS_SRC ${SRCROOT}/SoundFileReaderFlac.hpp)
-    list(APPEND CODECS_SRC ${SRCROOT}/SoundFileWriterFlac.cpp)
-    list(APPEND CODECS_SRC ${SRCROOT}/SoundFileWriterFlac.hpp)
-endif()
 source_group("codecs" FILES ${CODECS_SRC})
 
 # let CMake know about our additional audio libraries paths (on Windows and OSX)
@@ -70,44 +66,25 @@ elseif(SFML_OS_ANDROID)
 endif()
 
 # find external libraries
-if(NOT SFML_OS_ANDROID)
-    if(NOT SFML_OS_IOS)
-        find_package(OpenAL REQUIRED)
-    endif()
-    find_package(Vorbis REQUIRED)
-    find_package(FLAC REQUIRED)
-else()
-    find_host_package(OpenAL REQUIRED)
-    find_host_package(Vorbis REQUIRED)
-    find_host_package(FLAC REQUIRED)
-endif()
+sfml_find_package(OpenAL INCLUDE "OPENAL_INCLUDE_DIR" LINK "OPENAL_LIBRARY")
+sfml_find_package(Vorbis INCLUDE "VORBIS_INCLUDE_DIRS" LINK "VORBIS_LIBRARIES")
+sfml_find_package(FLAC INCLUDE "FLAC_INCLUDE_DIR" LINK "FLAC_LIBRARY")
 
-if(NOT SFML_OS_IOS)
-    include_directories(${OPENAL_INCLUDE_DIR})
-endif()
-include_directories(${VORBIS_INCLUDE_DIRS})
-if(SFML_ENABLE_FLAC)
-    include_directories(${FLAC_INCLUDE_DIR})
-endif()
-add_definitions(-DOV_EXCLUDE_STATIC_CALLBACKS) # avoids warnings in vorbisfile.h
-
-if(SFML_ENABLE_FLAC)
-    add_definitions(-DFLAC__NO_DLL)
-endif()
-
-# build the list of external libraries to link
-if(SFML_OS_IOS)
-    list(APPEND AUDIO_EXT_LIBS "-framework OpenAL")
-else()
-    list(APPEND AUDIO_EXT_LIBS ${OPENAL_LIBRARY})
-endif()
-if(SFML_OS_ANDROID)
-    list(APPEND AUDIO_EXT_LIBS android OpenSLES)
-endif()
-list(APPEND AUDIO_EXT_LIBS ${VORBIS_LIBRARIES} ${FLAC_LIBRARY})
+# avoids warnings in vorbisfile.h
+target_compile_definitions(Vorbis INTERFACE "OV_EXCLUDE_STATIC_CALLBACKS")
+target_compile_definitions(FLAC INTERFACE "FLAC__NO_DLL")
 
 # define the sfml-audio target
 sfml_add_library(sfml-audio
-                 SOURCES ${SRC} ${CODECS_SRC}
-                 DEPENDS sfml-system
-                 EXTERNAL_LIBS ${AUDIO_EXT_LIBS})
+                 SOURCES ${SRC} ${CODECS_SRC})
+
+# setup dependencies
+target_link_libraries(sfml-audio PRIVATE OpenAL)
+
+if(SFML_OS_ANDROID)
+    target_link_libraries(sfml-audio PRIVATE android OpenSLES)
+endif()
+
+target_link_libraries(sfml-audio
+                      PUBLIC sfml-system
+                      PRIVATE Vorbis FLAC)

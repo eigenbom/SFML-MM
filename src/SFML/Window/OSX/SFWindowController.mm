@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2015 Marco Antognini (antognini.marco@gmail.com),
+// Copyright (C) 2007-2018 Marco Antognini (antognini.marco@gmail.com),
 //                         Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
@@ -97,6 +97,8 @@
         m_window = nil;
         m_oglView = nil;
         m_requester = 0;
+        m_fullscreen = NO; // assuming this is the case... too hard to handle anyway.
+        m_restoreResize = NO;
 
         // Retain the window for our own use.
         m_window = [window retain];
@@ -134,7 +136,7 @@
     if ([NSThread currentThread] != [NSThread mainThread])
     {
         /*
-         * See http://lists.apple.com/archives/cocoa-dev/2011/Feb/msg00460.html
+         * See https://lists.apple.com/archives/cocoa-dev/2011/Feb/msg00460.html
          * for more information.
          */
         sf::err() << "Cannot create a window from a worker thread. (OS X limitation)" << std::endl;
@@ -148,6 +150,7 @@
         m_oglView = nil;
         m_requester = 0;
         m_fullscreen = (style & sf::Style::Fullscreen);
+        m_restoreResize = NO;
 
         if (m_fullscreen)
             [self setupFullscreenViewWithMode:mode];
@@ -345,6 +348,36 @@
 }
 
 
+////////////////////////////////////////////////////////
+-(void)setCursorGrabbed:(BOOL)grabbed
+{
+    // Remove or restore resizeable style if needed
+    BOOL resizeable = [m_window styleMask] & NSResizableWindowMask;
+    if (grabbed && resizeable)
+    {
+        m_restoreResize = YES;
+        NSUInteger newStyle = [m_window styleMask] & ~NSResizableWindowMask;
+        [m_window setStyleMask:newStyle];
+    }
+    else if (!grabbed && m_restoreResize)
+    {
+        m_restoreResize = NO;
+        NSUInteger newStyle = [m_window styleMask] | NSResizableWindowMask;
+        [m_window setStyleMask:newStyle];
+    }
+
+    // Forward to our view
+    [m_oglView setCursorGrabbed:grabbed];
+}
+
+
+////////////////////////////////////////////////////////
+-(void)setCursor:(NSCursor*)cursor
+{
+    return [m_oglView setCursor:cursor];
+}
+
+
 ////////////////////////////////////////////////////////////
 -(NSPoint)position
 {
@@ -379,6 +412,9 @@
 
     // Place the window.
     [m_window setFrameTopLeftPoint:point];
+
+    // In case the cursor was grabbed we need to update its position
+    [m_oglView updateCursorGrabbed];
 }
 
 
@@ -530,7 +566,7 @@
     if ([NSThread currentThread] != [NSThread mainThread])
     {
         /*
-         * See http://lists.apple.com/archives/cocoa-dev/2011/Feb/msg00460.html
+         * See https://lists.apple.com/archives/cocoa-dev/2011/Feb/msg00460.html
          * for more information.
          */
         sf::err() << "Cannot fetch event from a worker thread. (OS X restriction)" << std::endl;

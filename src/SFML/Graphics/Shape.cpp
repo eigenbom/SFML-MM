@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2015 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2018 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -163,8 +163,8 @@ m_textureRect     (),
 m_fillColor       (255, 255, 255),
 m_outlineColor    (255, 255, 255),
 m_outlineThickness(0),
-m_vertices        (TrianglesFan),
-m_outlineVertices (TrianglesStrip),
+m_vertices        (TriangleFan),
+m_outlineVertices (TriangleStrip),
 m_insideBounds    (),
 m_bounds          ()
 {
@@ -251,6 +251,14 @@ void Shape::updateTexCoords()
 ////////////////////////////////////////////////////////////
 void Shape::updateOutline()
 {
+    // Return if there is no outline
+    if (m_outlineThickness == 0.f)
+    {
+        m_outlineVertices.clear();
+        m_bounds = m_insideBounds;
+        return;
+    }
+
     std::size_t count = m_vertices.getVertexCount() - 2;
     m_outlineVertices.resize((count + 1) * 2);
 

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2015 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2018 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -45,6 +45,7 @@
 #include <SFML/System/Err.hpp>
 #include <android/window.h>
 #include <android/native_activity.h>
+#include <cstring>
 
 
 extern int main(int argc, char *argv[]);
@@ -463,7 +464,7 @@ static void onLowMemory(ANativeActivity* activity)
 
 
 ////////////////////////////////////////////////////////////
-void ANativeActivity_onCreate(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void ANativeActivity_onCreate(ANativeActivity* activity, void* savedState, size_t savedStateSize)
 {
     // Create an activity states (will keep us in the know, about events we care)
     sf::priv::ActivityStates* states = NULL;
@@ -485,7 +486,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* savedState, size_
     {
         states->savedState = malloc(savedStateSize);
         states->savedStateSize = savedStateSize;
-        memcpy(states->savedState, savedState, savedStateSize);
+        std::memcpy(states->savedState, savedState, savedStateSize);
     }
 
     states->mainOver = false;

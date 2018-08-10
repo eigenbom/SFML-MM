@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2015 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2018 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -58,7 +58,8 @@
 
 namespace
 {
-    sf::Mutex mutex;
+    sf::Mutex maxTextureUnitsMutex;
+    sf::Mutex isAvailableMutex;
 
     GLint checkMaxTextureUnits()
     {
@@ -72,7 +73,7 @@ namespace
     GLint getMaxTextureUnits()
     {
         // TODO: Remove this lock when it becomes unnecessary in C++11
-        sf::Lock lock(mutex);
+        sf::Lock lock(maxTextureUnitsMutex);
 
         static GLint maxUnits = checkMaxTextureUnits();
 
@@ -116,53 +117,6 @@ namespace
         }
         buffer.push_back('\0');
         return success;
-    }
-
-    bool checkShadersAvailable()
-    {
-        // Create a temporary context in case the user checks
-        // before a GlResource is created, thus initializing
-        // the shared context
-        if (!sf::Context::getActiveContext())
-        {
-            sf::Context context;
-
-            // Make sure that extensions are initialized
-            sf::priv::ensureExtensionsInit();
-
-            bool available = GLEXT_multitexture         &&
-                             GLEXT_shading_language_100 &&
-                             GLEXT_shader_objects       &&
-                             GLEXT_vertex_shader        &&
-                             GLEXT_fragment_shader;
-
-            return available;
-        }
-
-        // Make sure that extensions are initialized
-        sf::priv::ensureExtensionsInit();
-
-        bool available = GLEXT_multitexture         &&
-                         GLEXT_shading_language_100 &&
-                         GLEXT_shader_objects       &&
-                         GLEXT_vertex_shader        &&
-                         GLEXT_fragment_shader;
-
-        return available;
-    }
-    bool checkGeometryShadersAvailable()
-    {
-        // Create a temporary context in case the user checks
-        // before a GlResource is created, thus initializing
-        // the shared context
-        sf::Context context;
-
-        // Make sure that extensions are initialized
-        sf::priv::ensureExtensionsInit();
-
-        bool available = checkShadersAvailable() && GLEXT_geometry_shader4;
-
-        return available;
     }
 
     // Transforms an array of 2D vectors into a contiguous array of scalars
@@ -308,7 +262,7 @@ m_alwaysBind(true)
 ////////////////////////////////////////////////////////////
 Shader::~Shader()
 {
-    ensureGlContext();
+    TransientContextLock lock;
 
     // Destroy effect program
     if (m_shaderProgram)
@@ -661,7 +615,7 @@ void Shader::setUniform(const std::string& name, const Texture& texture)
 {
     if (m_shaderProgram)
     {
-        ensureGlContext();
+        TransientContextLock lock;
 
         // Find the location of the variable in the shader
         int location = getUniformLocation(name);
@@ -728,7 +682,7 @@ void Shader::setUniform(const std::string& name, CurrentTextureType)
 {
     if (m_shaderProgram)
     {
-        ensureGlContext();
+        TransientContextLock lock;
 
         // Find the location of the variable in the shader
         m_currentTexture = getUniformLocation(name);
@@ -752,7 +706,7 @@ void Shader::setUniformArray(const std::string& name, const float* scalarArray, 
 {
     UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform1fv(binder.location, length, scalarArray));
+        glCheck(GLEXT_glUniform1fv(binder.location, static_cast<GLsizei>(length), scalarArray));
 }
 
 
@@ -780,7 +734,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec2* vectorAr
 
     UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform2fv(binder.location, length, &contiguous[0]));
+        glCheck(GLEXT_glUniform2fv(binder.location, static_cast<GLsizei>(length), &contiguous[0]));
 }
 
 
@@ -791,7 +745,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec3* vectorAr
 
     UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform3fv(binder.location, length, &contiguous[0]));
+        glCheck(GLEXT_glUniform3fv(binder.location, static_cast<GLsizei>(length), &contiguous[0]));
 }
 
 ////////////////////////////////////////////////////////////
@@ -816,7 +770,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec4* vectorAr
 
     UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform4fv(binder.location, length, &contiguous[0]));
+        glCheck(GLEXT_glUniform4fv(binder.location, static_cast<GLsizei>(length), &contiguous[0]));
 }
 
 ////////////////////////////////////////////////////////////
@@ -846,7 +800,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Mat3* matrixAr
 
     UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniformMatrix3fv(binder.location, length, GL_FALSE, &contiguous[0]));
+        glCheck(GLEXT_glUniformMatrix3fv(binder.location, static_cast<GLsizei>(length), GL_FALSE, &contiguous[0]));
 }
 
 
@@ -861,7 +815,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Mat4* matrixAr
 
     UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniformMatrix4fv(binder.location, length, GL_FALSE, &contiguous[0]));
+        glCheck(GLEXT_glUniformMatrix4fv(binder.location, static_cast<GLsizei>(length), GL_FALSE, &contiguous[0]));
 }
 
 
@@ -930,7 +884,7 @@ void Shader::bind(const Shader* shader)
 
 void Shader::bindProgram(const Shader* shader)
 {
-    ensureGlContext();
+    TransientContextLock lock;
 
     // Make sure that we can use shaders
     if (!isAvailable())
@@ -957,10 +911,26 @@ void Shader::bindProgram(const Shader* shader)
 ////////////////////////////////////////////////////////////
 bool Shader::isAvailable()
 {
-    // TODO: Remove this lock when it becomes unnecessary in C++11
-    Lock lock(mutex);
+    Lock lock(isAvailableMutex);
 
-    static bool available = checkShadersAvailable();
+    static bool checked = false;
+    static bool available = false;
+
+    if (!checked)
+    {
+        checked = true;
+
+        TransientContextLock contextLock;
+
+        // Make sure that extensions are initialized
+        sf::priv::ensureExtensionsInit();
+
+        available = GLEXT_multitexture         &&
+                    GLEXT_shading_language_100 &&
+                    GLEXT_shader_objects       &&
+                    GLEXT_vertex_shader        &&
+                    GLEXT_fragment_shader;
+    }
 
     return available;
 }
@@ -969,10 +939,22 @@ bool Shader::isAvailable()
 ////////////////////////////////////////////////////////////
 bool Shader::isGeometryAvailable()
 {
-    // TODO: Remove this lock when it becomes unnecessary in C++11
-    Lock lock(mutex);
+    Lock lock(isAvailableMutex);
 
-    static bool available = checkGeometryShadersAvailable();
+    static bool checked = false;
+    static bool available = false;
+
+    if (!checked)
+    {
+        checked = true;
+
+        TransientContextLock contextLock;
+
+        // Make sure that extensions are initialized
+        sf::priv::ensureExtensionsInit();
+
+        available = isAvailable() && GLEXT_geometry_shader4;
+    }
 
     return available;
 }
@@ -981,7 +963,7 @@ bool Shader::isGeometryAvailable()
 ////////////////////////////////////////////////////////////
 bool Shader::compile(const char* vertexShaderCode, const char* geometryShaderCode, const char* fragmentShaderCode)
 {
-    ensureGlContext();
+    TransientContextLock lock;
 
     // First make sure that we can use shaders
     if (!isAvailable())
