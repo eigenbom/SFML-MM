@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 
+set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7" CACHE STRING "Minimum OS X deployment version")
+
 # define a macro that helps defining an option
 macro(sfml_set_option var default type docstring)
     if(NOT DEFINED ${var})
@@ -309,6 +312,8 @@ else()
     set_target_properties(SFML PROPERTIES
                           BUILD_WITH_INSTALL_RPATH 1
                           INSTALL_NAME_DIR "@rpath")
+
+
 
     # install rule
     install(TARGETS SFML

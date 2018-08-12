@@ -58,7 +58,7 @@ public:
         Pixels      ///< Texture coordinates in range [0 .. size]
     };
 
-    enum TextureFormat {
+    enum class TextureFormat {
         Default,
         RGB5_A1
     };
